@@ -114,7 +114,7 @@ func (c *SiteConfig) BuildSite(hugoConfig *Config) (err error) {
 func SaveConfig(path string, config interface{}) error {
 	dir := filepath.Dir(path)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err := os.Mkdir(dir, 0775)
+		err := os.Mkdir(dir, os.ModePerm)
 		if err != nil {
 			return errors.Wrapf(err, "creating dir %s", dir)
 		}

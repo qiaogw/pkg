@@ -265,7 +265,7 @@ func LoadConfigToVar(path string, v *GlobalConfig) error {
 
 	logDir := Config.Log.FilePath
 	if _, err := os.Stat(logDir); os.IsNotExist(err) {
-		err := os.Mkdir(logDir, 0775)
+		err := os.Mkdir(logDir, os.ModePerm)
 		if err != nil {
 			return errors.Wrapf(err, "creating dir %s", logDir)
 		}
@@ -366,7 +366,7 @@ func GetConfigFromPath(path string) (interface{}, error) {
 func SaveConfig(path string) error {
 	dir := filepath.Dir(path)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err := os.Mkdir(dir, 0775)
+		err := os.Mkdir(dir, os.ModePerm)
 		if err != nil {
 			return errors.Wrapf(err, "creating dir %s", dir)
 		}

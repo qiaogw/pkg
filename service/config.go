@@ -52,7 +52,7 @@ func Run(options *Options, action string) error {
 
 	logDir := config.Config.Log.FilePath
 	if _, err := os.Stat(logDir); os.IsNotExist(err) {
-		err := os.Mkdir(logDir, 0775)
+		err := os.Mkdir(logDir, os.ModePerm)
 		if err != nil {
 			return errors.Wrapf(err, "creating dir %s", logDir)
 		}

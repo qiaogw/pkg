@@ -56,7 +56,7 @@ func LockOrDie(dir string) *flock.Flock {
 func MakeDirectory(dir string) error {
 	if _, err := os.Stat(dir); err != nil {
 		if os.IsNotExist(err) {
-			return os.Mkdir(dir, 0775)
+			return os.Mkdir(dir, os.ModePerm)
 		}
 		return err
 	}
