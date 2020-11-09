@@ -23,12 +23,12 @@ const (
 	DefaultConfigDirName = "conf"
 
 	// DefaultPidFilename is default filename of pid file
-	DefaultPidFilename = "qiaomu.pid"
+	DefaultPidFilename = "app.pid"
 
 	// DefaultLockFilename is default filename of lock file
-	DefaultLockFilename = "qiaomu.lock"
+	DefaultLockFilename = "app.lock"
 	//DefaultLogFileName
-	DefaultLogFileName = "qiaomu.log"
+	DefaultLogFileName = "app.log"
 	//DefaultCaddyLogFileName
 	DefaultCaddyLogFileName = "caddy.log"
 	// server file dir
@@ -36,7 +36,7 @@ const (
 	// user file upload file dir
 	DefaultUserDataDirName = "user-data"
 	// temp file dir
-	DefaultTempDirName = "qiaomu-temp"
+	DefaultTempDirName = "app-temp"
 	// only for sqllite3 file dir
 	DefaultCaddyfile = "Caddyfile"
 	DefaultDbPath    = "DB-data"
