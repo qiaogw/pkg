@@ -4,25 +4,27 @@
 package config
 
 import (
-	"encoding/json"
+	//"encoding/json"
 	"fmt"
+
+	"github.com/qiaogw/pkg/tools"
+	"gopkg.in/ini.v1"
+
+	//"github.com/astaxie/beego"
+	"github.com/qiaogw/pkg/consts"
+	//"github.com/qiaogw/pkg/caddy"
+	//"github.com/qiaogw/pkg/hugo"
+	"github.com/qiaogw/pkg/logs"
+
+	//"github.com/qiaogw/pkg/logs"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/astaxie/beego"
-	"github.com/qiaogw/log"
-	logConfig "github.com/qiaogw/ozzo-config"
-	"github.com/qiaogw/pkg/caddy"
-	"github.com/qiaogw/pkg/consts"
-	"github.com/qiaogw/pkg/hugo"
-	"github.com/qiaogw/pkg/logs"
-	"go.uber.org/zap"
-
-	//"context"
 	"github.com/pelletier/go-toml"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 // HostPort endpoint in form "str:int"
@@ -156,14 +158,15 @@ type Seaweed struct {
 	Private     string `label:"Filer管理地址"`
 }
 type S3 struct {
-	Endpoint        string `label:"地址"`              // 地址
-	AccessKeyID     string `label:"AccessKeyID"`     // 地址
-	SecretAccessKey string `label:"SecretAccessKey"` // 地址
-	Region          string `label:"对象存储的region"`     // 对象存储的region
-	Bucket          string `label:"对象存储的Bucket"`     // 对象存储的Bucket
-	Secure          bool   `label:"true代表使用HTTPS"`   // true代表使用HTTPS
-	Ignore          string `label:"隐藏文件，S3不支持空目录"`   // 地址
-	LifeDay         int64  `label:"存储周期，天"`          // 地址
+	Endpoint          string `label:"地址"`              // 地址
+	AccessKeyID       string `label:"AccessKeyID"`     // 地址
+	SecretAccessKey   string `label:"SecretAccessKey"` // 地址
+	Region            string `label:"对象存储的region"`     // 对象存储的region
+	Bucket            string `label:"对象存储的Bucket"`     // 对象存储的Bucket
+	Secure            bool   `label:"true代表使用HTTPS"`   // true代表使用HTTPS
+	Ignore            string `label:"隐藏文件，S3不支持空目录"`   // 地址
+	LifeDay           int64  `label:"存储周期，天"`          // 地址
+	DefautRestorePath string `label:"默认恢复文件前缀"`
 }
 
 type LocalStore struct {
@@ -176,41 +179,40 @@ type LocalStore struct {
 	Temp        string `label:"临时目录"`          // 地址
 }
 type GlobalConfig struct {
-	AppName           string                  `label:"应用名称"`
-	DBUpdateToVersion float64                 `label:"数据库版本"`            // 数据库升级到某个版本
-	RunMode           string                  `label:"运行模式"`             // 运行模式
-	TokenExpire       int64                   `label:"token有效时间 秒"`      // token有效时间
-	ConfigPath        string                  `label:"配置文件地址"`           // 配置文件地址
-	JwtPrivatePath    string                  `label:"jwt private path"` // jwt private path
-	JwtPublicPath     string                  `label:"jwt public path"`  // jwt public path
-	JwtFlash          bool                    `label:"jwt 是否自动刷新"`
-	TempDir           string                  `label:"临时文件"`   // 临时文件
-	SystemDataDir     string                  `label:"系统文件地址"` // 系统文件地址，系统自带文件
-	UserDataDir       string                  `label:"用户文件地址"` // 用户文件地址，用户上传文件存储位置
-	PidFilePath       string                  `label:"进程"`     // 进程
-	LockFilePath      string                  // 进程锁 file path
-	Store             string                  // 存储配置
-	TLS               TlsConfig               // tls
-	Redis             RedisConfig             // redis
-	HTTP              HostPort                // http端口
-	RPC               RpcPort                 // rpc端口
-	DB                DBConfig                // 数据库配置
-	Centrifugo        CentrifugoConfig        // Centrifugo消息推送
-	Log               LogConfig               // 日志
-	EmailNotification EmailNotificationConfig // 邮件配置
-	Cors              CorsConfig              // 跨域配置
-	Admin             SuperUser               // 超级用户
-	Init              InitConfig              // 初始化数据
-	FileUpload        FileUploadConfig        // 文件上传、
-	Elastic           ElasticConfig           // elastic配置
-	Auth              Auth                    // 认证配置
-	Cache             Cache                   // Cache配置
-	Seaweed           Seaweed                 // Seaweed配置
-	Caddy             caddy.Config            // caddy 配置
-	Hugo              hugo.Config             // hugo 配置
-	S3                S3                      // S3 配置
-	LocalStore        LocalStore              // LocalStore 配置
-
+	AppName           string  `label:"应用名称"`
+	DBUpdateToVersion float64 `label:"数据库版本"` // 数据库升级到某个版本
+	RunMode           string  `label:"运行模式"`  // 运行模式
+	//TokenExpire       int64                   `label:"token有效时间 秒"`      // token有效时间
+	ConfigPath string `label:"配置文件地址"` // 配置文件地址
+	//JwtPrivatePath    string                  `label:"jwt private path"` // jwt private path
+	//JwtPublicPath     string                  `label:"jwt public path"`  // jwt public path
+	//JwtFlash          bool                    `label:"jwt 是否自动刷新"`
+	TempDir       string `label:"临时文件"`   // 临时文件
+	SystemDataDir string `label:"系统文件地址"` // 系统文件地址，系统自带文件
+	UserDataDir   string `label:"用户文件地址"` // 用户文件地址，用户上传文件存储位置
+	PidFilePath   string `label:"进程"`     // 进程
+	LockFilePath  string // 进程锁 file path
+	Store         string // 存储配置
+	//TLS               TlsConfig               // tls
+	//Redis             RedisConfig             // redis
+	//HTTP              HostPort                // http端口
+	//RPC               RpcPort                 // rpc端口
+	//DB                DBConfig                // 数据库配置
+	//Centrifugo        CentrifugoConfig        // Centrifugo消息推送
+	Log LogConfig // 日志
+	//EmailNotification EmailNotificationConfig // 邮件配置
+	//Cors              CorsConfig              // 跨域配置
+	//Admin             SuperUser               // 超级用户
+	//Init              InitConfig              // 初始化数据
+	//FileUpload        FileUploadConfig        // 文件上传、
+	//Elastic           ElasticConfig           // elastic配置
+	//Auth              Auth                    // 认证配置
+	//Cache             Cache                   // Cache配置
+	//Seaweed           Seaweed                 // Seaweed配置
+	//Caddy             caddy.Config            // caddy 配置
+	//Hugo              hugo.Config             // hugo 配置
+	S3         S3         // S3 配置
+	LocalStore LocalStore // LocalStore 配置
 }
 
 // GetPidPath returns path to pid file
@@ -220,9 +222,9 @@ func (c *GlobalConfig) GetPidPath() string {
 func DefaultConfigPath() string {
 	p, err := os.Getwd()
 	if err != nil {
-		logs.Logger.Fatal("getting current wd")
+		logs.Fatal("getting current wd")
 	}
-	//return filepath.Join(p, "config", "config.toml")
+	//return filepath.Join(p, "conf", "config.toml")
 	return filepath.Join(p, consts.DefaultConfigDirName, "app.toml")
 }
 
@@ -230,7 +232,34 @@ func DefaultConfigPath() string {
 // the function has side effect updating global var Config
 func LoadConfig(path string) error {
 	//log.WithFields(log.Fields{"path": path}).Info("Loading config")
-	return LoadConfigToVar(path, &Config)
+	err := LoadConfigToVar(path, &Config)
+	if err != nil {
+		return err
+	}
+	_, err = os.Create(Config.LocalStore.ConfigFile)
+	tools.CheckPath(Config.LocalStore.ConfigFile)
+	if err != nil {
+		fmt.Printf("os.Create failed: %+v\n", err)
+		return err
+	}
+	cfg, err := ini.Load(Config.LocalStore.ConfigFile)
+	if err != nil {
+		fmt.Printf("ini.Load config failed: %+v\n", err)
+		return err
+	}
+	cfg.Section("s3").Key("type").SetValue("s3")
+	cfg.Section("s3").Key("provider").SetValue("Other")
+	cfg.Section("s3").Key("env_auth").SetValue("false")
+	cfg.Section("s3").Key("access_key_id").SetValue(Config.S3.AccessKeyID)
+	cfg.Section("s3").Key("secret_access_key").SetValue(Config.S3.SecretAccessKey)
+	cfg.Section("s3").Key("endpoint").SetValue("http://" + Config.S3.Endpoint)
+	cfg.Section("s3").Key("acl").SetValue("private")
+	err = cfg.SaveTo(Config.LocalStore.ConfigFile)
+	if err != nil {
+		fmt.Printf("Saving S3 config failed: %+v\n", err)
+		return err
+	}
+	return nil
 }
 func LoadConfigToVar(path string, v *GlobalConfig) error {
 	_, err := os.Stat(path)
@@ -238,7 +267,6 @@ func LoadConfigToVar(path string, v *GlobalConfig) error {
 		InitConfigFile()
 		return errors.Errorf("Unable to load config file %s", path)
 	}
-
 	viper.SetConfigFile(path)
 	err = viper.ReadInConfig()
 	if err != nil {
@@ -248,11 +276,25 @@ func LoadConfigToVar(path string, v *GlobalConfig) error {
 	if err != nil {
 		return errors.Wrapf(err, "marshalling config to global struct variable")
 	}
-	v.RunMode = beego.BConfig.RunMode
-	v.AppName = beego.BConfig.AppName
+
+	//log.Error(path)
+	//v.RunMode = beego.BConfig.RunMode
+	//v.AppName = beego.BConfig.AppName
 
 	logConf := Config.Log
 	logFile := filepath.Join(logConf.FilePath, consts.DefaultLogFileName)
+	if _, err := os.Stat(logConf.FilePath); os.IsNotExist(err) {
+		err := os.Mkdir(logConf.FilePath, os.ModePerm)
+		if err != nil {
+			return errors.Wrapf(err, "creating dir %s", logConf.FilePath)
+		}
+	}
+	if _, err := os.Stat(Config.LocalStore.CacheDir); os.IsNotExist(err) {
+		err := os.Mkdir(Config.LocalStore.CacheDir, os.ModePerm)
+		if err != nil {
+			return errors.Wrapf(err, "creating dir %s", logConf.FilePath)
+		}
+	}
 	logs.InitLogger(
 		Config.RunMode,
 		logFile,
@@ -263,58 +305,59 @@ func LoadConfigToVar(path string, v *GlobalConfig) error {
 		logConf.EnableKafka,
 		logConf.KafkaAddress)
 
-	logDir := Config.Log.FilePath
-	if _, err := os.Stat(logDir); os.IsNotExist(err) {
-		err := os.Mkdir(logDir, os.ModePerm)
-		if err != nil {
-			return errors.Wrapf(err, "creating dir %s", logDir)
-		}
-	}
-	logConfFile := filepath.Join(Config.ConfigPath, "log.json")
-	if _, err := os.Stat(logConfFile); err == nil {
-		c := logConfig.New()
-		c.Load("app.json")
-		// 注册供 Logger.Targets 使用的日志标的类型
-		c.Register("ConsoleTarget", log.NewConsoleTarget)
-		c.Register("FileTarget", log.NewFileTarget)
-	}
+	//logDir := Config.Log.FilePath
+	//if _, err := os.Stat(logDir); os.IsNotExist(err) {
+	//	err := os.Mkdir(logDir, os.ModePerm)
+	//	if err != nil {
+	//		return errors.Wrapf(err, "creating dir %s", logDir)
+	//	}
+	//}
+	//logConfFile := filepath.Join(Config.ConfigPath, "log.json")
+	//if _, err := os.Stat(logConfFile); err == nil {
+	//	c := logConfig.New()
+	//	c.Load("app.json")
+	//	// 注册供 Logger.Targets 使用的日志标的类型
+	//	c.Register("ConsoleTarget", log.NewConsoleTarget)
+	//	c.Register("FileTarget", log.NewFileTarget)
+	//}
 
-	fileTarget := log.NewFileTarget()
-	fileTarget.FileName = filepath.Join(logDir, `app_{date:20060102}.log`) //按天分割日志
-	fileTarget.MaxBytes = 10 * 1024 * 1024
-	fileTarget.MaxLevel = log.LevelInfo
-	log.SetTarget(fileTarget)
-
-	log.DefaultLog.Logger = log.GetLogger(Config.AppName, func(l *log.Logger, e *log.Entry) string {
-		return fmt.Sprintf("%v [%v] [%v] %v %v", e.Time.Format(time.RFC3339), e.Level, e.Category, e.Message, e.CallStack)
-	})
-
-	redis, _ := json.Marshal(viper.Get("RedisProd"))
-	db, _ := json.Marshal(viper.Get("DBProd"))
-	seaweed, _ := json.Marshal(viper.Get("SeaweedProd"))
-	if v.RunMode == "dev" {
-		redis, _ = json.Marshal(viper.Get("RedisDev"))
-		db, _ = json.Marshal(viper.Get("DBDev"))
-		seaweed, _ = json.Marshal(viper.Get("SeaweedDev"))
-	}
-	prd := new(RedisConfig)
-	pdb := new(DBConfig)
-	psw := new(Seaweed)
-	err = json.Unmarshal(redis, prd)
-	if err != nil {
-		return errors.Wrapf(err, "marshalling config to global struct variable")
-	}
-	v.Redis = *prd
-	err = json.Unmarshal(db, pdb)
-	if err != nil {
-		return errors.Wrapf(err, "marshalling config to global struct variable")
-	}
-	v.DB = *pdb
-	err = json.Unmarshal(seaweed, psw)
-	if err != nil {
-		return errors.Wrapf(err, "marshalling config to global struct variable")
-	}
-	v.Seaweed = *psw
+	//fileTarget := log.NewFileTarget()
+	//fileTarget.FileName = filepath.Join(logDir, Config.AppName+`_{date:20060102}.log`) //按天分割日志
+	//fileTarget.MaxBytes = 10 * 1024 * 1024
+	////fileTarget.MaxLevel = log.LevelInfo
+	//log.SetTarget(fileTarget)
+	////t1 := log.NewConsoleTarget()
+	////log.DefaultLog.Logger.Targets = append(log.DefaultLog.Logger.Targets, fileTarget, t1)
+	//log.DefaultLog.Logger = log.GetLogger(Config.AppName, func(l *log.Logger, e *log.Entry) string {
+	//	return fmt.Sprintf("%v [%v] [%v] %v %v", e.Time.Format(time.RFC3339), e.Level, e.Category, e.Message, e.CallStack)
+	//})
+	//log.DefaultLog.Logger.CallDepth = 5
+	//redis, _ := json.Marshal(viper.Get("RedisProd"))
+	//db, _ := json.Marshal(viper.Get("DBProd"))
+	//seaweed, _ := json.Marshal(viper.Get("SeaweedProd"))
+	//if v.RunMode == "dev" {
+	//	redis, _ = json.Marshal(viper.Get("RedisDev"))
+	//	db, _ = json.Marshal(viper.Get("DBDev"))
+	//	seaweed, _ = json.Marshal(viper.Get("SeaweedDev"))
+	//}
+	//prd := new(RedisConfig)
+	//pdb := new(DBConfig)
+	//psw := new(Seaweed)
+	//err = json.Unmarshal(redis, prd)
+	//if err != nil {
+	//	return errors.Wrapf(err, "marshalling config to global struct variable")
+	//}
+	//v.Redis = *prd
+	//err = json.Unmarshal(db, pdb)
+	//if err != nil {
+	//	return errors.Wrapf(err, "marshalling config to global struct variable")
+	//}
+	//v.DB = *pdb
+	//err = json.Unmarshal(seaweed, psw)
+	//if err != nil {
+	//	return errors.Wrapf(err, "marshalling config to global struct variable")
+	//}
+	//v.Seaweed = *psw
 	return nil
 }
 
@@ -322,13 +365,12 @@ func InitConfigFile() error {
 	err := FillRuntimePaths()
 	if err != nil {
 		fmt.Printf("Filling config: %+v\n", err)
-
 		logs.Fatalf("Filling config", zap.Error(err))
 	}
 	configPath := filepath.Join("conf", consts.DefaultConfigFile)
 	err = viper.Unmarshal(&Config)
 	if err != nil {
-		log.Errorf("Marshalling config to global struct variable: %+v\n", err)
+		logs.Errorf("Marshalling config to global struct variable: %+v\n", err)
 	}
 	err = SaveConfig(configPath)
 	if err != nil {
@@ -386,6 +428,30 @@ func SaveConfig(path string) error {
 	return nil
 }
 
+// SaveConfig save global parameters to configFile
+func SaveConfigToml(path string, evt interface{}) error {
+	dir := filepath.Dir(path)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		err := os.Mkdir(dir, os.ModePerm)
+		if err != nil {
+			return errors.Wrapf(err, "creating dir %s", dir)
+		}
+	}
+
+	cf, err := os.Create(path)
+	if err != nil {
+		//log.WithFields(log.Fields{"type": consts.IOError, "error": err}).Error("Create config file failed")
+		return err
+	}
+	defer cf.Close()
+
+	err = toml.NewEncoder(cf).Encode(evt)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // FillRuntimePaths fills paths from runtime parameters
 func FillRuntimePaths() error {
 	cwd, err := os.Getwd()
@@ -413,44 +479,77 @@ func FillRuntimePaths() error {
 	if Config.Log.FilePath == "" {
 		Config.Log.FilePath = filepath.Join(cwd, "logs")
 	}
-	if Config.JwtPrivatePath == "" {
-		Config.JwtPrivatePath = filepath.Join(cwd, "config", "jwt", "tm.rsa")
+	//if Config.JwtPrivatePath == "" {
+	//	Config.JwtPrivatePath = filepath.Join(cwd, "conf", "jwt", "tm.rsa")
+	//}
+	//if Config.JwtPublicPath == "" {
+	//	Config.JwtPublicPath = filepath.Join(cwd, "conf", "jwt", "tm.rsa.pub")
+	//}
+	////https
+	//if Config.TLS.CertFile == "" {
+	//	Config.TLS.CertFile = filepath.Join(cwd, "conf", "https", "cert.pem")
+	//}
+	//if Config.TLS.KeyFile == "" {
+	//	Config.TLS.KeyFile = filepath.Join(cwd, "conf", "https", "key.pem")
+	//}
+	//
+	//if Config.Init.API == "" {
+	//	Config.Init.API = filepath.Join(cwd, "init", "api_data.yml")
+	//
+	//}
+	//
+	//if Config.DB.DbPath == "" {
+	//	Config.DB.DbPath = filepath.Join(cwd, consts.DefaultDbPath)
+	//}
+	//if Config.DB.BackupPath == "" {
+	//	Config.DB.BackupPath = filepath.Join(cwd, consts.DefaultDbPath)
+	//}
+	//if Config.Caddy.Caddyfile == "" {
+	//	Config.Caddy.Caddyfile = filepath.Join(cwd, consts.DefaultConfigDirName, consts.DefaultCaddyfile)
+	//}
+	//if Config.Caddy.LogFile == "" {
+	//	Config.Caddy.LogFile = filepath.Join(cwd, consts.DefaultLogDirName, consts.DefaultCaddyLogFileName)
+	//}
+	//if Config.Hugo.Dir == "" {
+	//	Config.Hugo.Dir = filepath.Join(cwd, consts.DefaultWebPath)
+	//}
+	if Config.AppName == "" {
+		Config.AppName = consts.DefaultAppName
 	}
-	if Config.JwtPublicPath == "" {
-		Config.JwtPublicPath = filepath.Join(cwd, "config", "jwt", "tm.rsa.pub")
+	if Config.RunMode == "" {
+		Config.RunMode = "prod"
 	}
-	//https
-	if Config.TLS.CertFile == "" {
-		Config.TLS.CertFile = filepath.Join(cwd, "config", "https", "cert.pem")
+	if Config.Store == "" {
+		Config.Store = consts.DefaultStore
 	}
-	if Config.TLS.KeyFile == "" {
-		Config.TLS.KeyFile = filepath.Join(cwd, "config", "https", "key.pem")
+	if Config.LocalStore.CacheDir == "" {
+		Config.LocalStore.CacheDir = filepath.Join(cwd, consts.DefaultCacheDir)
 	}
-
-	if Config.Init.API == "" {
-		Config.Init.API = filepath.Join(cwd, "init", "api_data.yml")
-
+	if Config.LocalStore.Dir == "" {
+		Config.LocalStore.Dir = filepath.Join(cwd, consts.DefaultStoreDir)
 	}
-
-	if Config.DB.DbPath == "" {
-		Config.DB.DbPath = filepath.Join(cwd, consts.DefaultDbPath)
+	if Config.LocalStore.ConfigFile == "" {
+		Config.LocalStore.ConfigFile = filepath.Join(cwd, consts.DefaultStoreConfigFile)
 	}
-	if Config.DB.BackupPath == "" {
-		Config.DB.BackupPath = filepath.Join(cwd, consts.DefaultDbPath)
+	if Config.LocalStore.Ignore == "" {
+		Config.LocalStore.Ignore = consts.DefaultStoreIgnore
 	}
-	if Config.Caddy.Caddyfile == "" {
-		Config.Caddy.Caddyfile = filepath.Join(cwd, consts.DefaultConfigDirName, consts.DefaultCaddyfile)
+	if Config.LocalStore.LogFile == "" {
+		Config.LocalStore.LogFile = filepath.Join(cwd, consts.DefaultLogDirName, "s3.log")
 	}
-	if Config.Caddy.LogFile == "" {
-		Config.Caddy.LogFile = filepath.Join(cwd, consts.DefaultLogDirName, consts.DefaultCaddyLogFileName)
+	if Config.S3.Ignore == "" {
+		Config.S3.Ignore = consts.DefaultStoreIgnore
 	}
-	if Config.Hugo.Dir == "" {
-		Config.Hugo.Dir = filepath.Join(cwd, consts.DefaultWebPath)
+	if Config.S3.LifeDay < 1 {
+		Config.S3.LifeDay = 7
+	}
+	if Config.S3.Region == "" {
+		Config.S3.Region = "us-east-1"
 	}
 	return nil
 }
 func MustOK(err error) {
 	if err != nil {
-		log.Fatal(err.Error())
+		logs.Fatal(err.Error())
 	}
 }

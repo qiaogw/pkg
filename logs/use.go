@@ -181,7 +181,6 @@ func Info(args ...interface{}) {
 	if logger == nil {
 		return
 	}
-
 	if adapter, ok := logger.adapters[FileTypeLog]; ok {
 		adapter.Info(args...)
 	}

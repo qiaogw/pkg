@@ -7,6 +7,7 @@ const VERSION = "0.1.0"
 
 //default value
 const (
+	DefaultAppName = "emanager"
 	//user upload file url
 	USER_UPLOAD_FILE_URL = "/upload_files/"
 	//system file url
@@ -23,12 +24,12 @@ const (
 	DefaultConfigDirName = "conf"
 
 	// DefaultPidFilename is default filename of pid file
-	DefaultPidFilename = "app.pid"
+	DefaultPidFilename = "emanager.pid"
 
 	// DefaultLockFilename is default filename of lock file
-	DefaultLockFilename = "app.lock"
+	DefaultLockFilename = "emanager.lock"
 	//DefaultLogFileName
-	DefaultLogFileName = "app.log"
+	DefaultLogFileName = "emanager.log"
 	//DefaultCaddyLogFileName
 	DefaultCaddyLogFileName = "caddy.log"
 	// server file dir
@@ -38,9 +39,14 @@ const (
 	// temp file dir
 	DefaultTempDirName = "app-temp"
 	// only for sqllite3 file dir
-	DefaultCaddyfile = "Caddyfile"
-	DefaultDbPath    = "DB-data"
-	DefaultWebPath   = "web-data"
+	DefaultCaddyfile       = "Caddyfile"
+	DefaultDbPath          = "DB-data"
+	DefaultWebPath         = "web-data"
+	DefaultStore           = "local"
+	DefaultCacheDir        = "s3cache"
+	DefaultStoreDir        = "s3data"
+	DefaultStoreConfigFile = "conf/s3/s3.conf"
+	DefaultStoreIgnore     = ".s3dataIgnoreIgnoreIgnore"
 )
 
 //context variable
