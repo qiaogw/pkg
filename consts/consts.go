@@ -1,6 +1,3 @@
-// Copyright 2018 cloudy itcloudy@qq.com.  All rights reserved.
-// Use of this source code is governed by a MIT style
-// license that can be found in the LICENSE file.
 package consts
 
 const VERSION = "0.1.0"
@@ -68,4 +65,5 @@ const (
 const (
 	DefaultPage = 1
 	DefaultSize = 20
+	DefaultAuth = "qgw"
 )

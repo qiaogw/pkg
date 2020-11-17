@@ -16,7 +16,6 @@ import (
 	//"github.com/qiaogw/pkg/hugo"
 	"github.com/qiaogw/pkg/logs"
 
-	//"github.com/qiaogw/pkg/logs"
 	"os"
 	"path/filepath"
 	"time"
