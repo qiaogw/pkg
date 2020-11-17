@@ -235,8 +235,8 @@ func LoadConfig(path string) error {
 	if err != nil {
 		return err
 	}
-	_, err = os.Create(Config.LocalStore.ConfigFile)
 	tools.CheckPath(Config.LocalStore.ConfigFile)
+	_, err = os.Create(Config.LocalStore.ConfigFile)
 	if err != nil {
 		fmt.Printf("os.Create failed: %+v\n", err)
 		return err
