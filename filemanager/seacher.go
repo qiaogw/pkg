@@ -1,7 +1,6 @@
 package filemanager
 
 import (
-	//"github.com/webx-top/echo"
 	"io/ioutil"
 	"os"
 	"path/filepath"

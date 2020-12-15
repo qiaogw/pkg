@@ -1,39 +1,47 @@
-package local
+package fuse
 
 import (
 	"fmt"
+
+	"github.com/astaxie/beego"
+
+	//"github.com/astaxie/beego/context"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
-	"strings"
+	"sync"
 
-	"github.com/astaxie/beego"
+	"github.com/pkg/errors"
 	"github.com/qiaogw/pkg/config"
+	"github.com/qiaogw/pkg/store"
 	"github.com/qiaogw/pkg/store/helper"
 	"github.com/qiaogw/pkg/tools"
-
-	//"os"
-	"github.com/qiaogw/pkg/store"
 )
 
-const Name = `local`
+const Name = `fuse`
 
 var _ store.Storer = &Filesystem{}
 
 func init() {
 	store.StorerRegister(Name, func(typ string) (store.Storer, error) {
-		beego.Debug(Name)
 		return NewFilesystem(typ), nil
 	})
 }
 
 func NewFilesystem(typ string, baseURLs ...string) *Filesystem {
 	var host string
-	addrs, err := net.InterfaceAddrs()
+	// var wg sync.WaitGroup
+
+	// go S3Run(wg)
+	// wg.Wait()
+	// time.Sleep(3 * time.Second)
+	//// 清空所有空目录
+	//err := tools.EmptyFloder(config.Config.LocalStore.Dir)
+	addrs, _ := net.InterfaceAddrs()
 	for _, address := range addrs {
 		// 检查ip地址判断是否回环地址
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
@@ -43,16 +51,40 @@ func NewFilesystem(typ string, baseURLs ...string) *Filesystem {
 		}
 	}
 	urlstr := fmt.Sprintf("http://%s:%v/%s", host, beego.BConfig.Listen.HTTPPort, "store")
-	if len(baseURLs) > 0 {
-		urlstr = baseURLs[0]
-		urlstr = strings.TrimSuffix(urlstr, `/`)
-	}
-	beego.Debug(urlstr, beego.BConfig.Listen.HTTPPort, err)
-	beego.Debug("s3 NewFilesystemNewFilesystemNewFilesystemNewFilesystem")
+	//beego.Debug(urlstr, beego.BConfig.Listen.HTTPPort, addrs)
+	beego.Debug("fuse fuse", urlstr)
+	mgr, _ := New(1024)
 	return &Filesystem{
+		//Context: ctx,
 		Type:     typ,
 		baseURL:  urlstr,
-		BasePath: config.Config.LocalStore.Dir,
+		BasePath: "/",
+		mgr:      mgr,
+		// BasePath: filepath.Join(config.Config.S3.Dir, "buck1"),
+	}
+}
+
+func S3Run(wg sync.WaitGroup) {
+	LocalConf := config.Config.LocalStore
+	//cmdRclone := fmt.Sprintf("rclone cmount s3:  %s --cache-dir %s --config %s --vfs-cache-mode writes --allow-other   -q ", LocalConf.Dir, LocalConf.CacheDir, LocalConf.ConfigFile)
+	//cmdRclone := fmt.Sprintf("rclone rmdirs s3:buck1  --config %s --leave-root -vv ", LocalConf.ConfigFile)
+	wg.Add(1)
+	defer wg.Done()
+	//cmd := exec.Command("rclone", "rmdirs", "s3:buck1", "--config", LocalConf.ConfigFile, "--leave-root")
+	//if err := cmd.Run(); err != nil {
+	//	beego.Error("Failed to start cmd: ", err)
+	//}
+	//if err := cmd.Wait(); err != nil {
+	//	beego.Error("Failed to Wait cmd: ", err)
+	//}
+	logStr := fmt.Sprintf("--log-file=%s", LocalConf.LogFile)
+	command := exec.Command("rclone", "mount", "s3:buck1", LocalConf.Dir, "--cache-dir", LocalConf.CacheDir, "--config", LocalConf.ConfigFile, "--vfs-cache-mode", "writes", "--allow-other", "--drive-use-trash=false", logStr, "--allow-non-empty", "-q")
+	//start the execution
+	if err := command.Start(); err != nil {
+		beego.Error("Failed to start cmd: ", err)
+	}
+	if err := command.Wait(); err != nil {
+		beego.Error("Failed to Wait cmd: ", err) //
 	}
 }
 
@@ -61,10 +93,15 @@ type Filesystem struct {
 	Type     string
 	baseURL  string
 	BasePath string
+	mgr      *S3Manager
 }
 
 func (f *Filesystem) Get(file string) (data io.Reader, err error) {
-	panic("implement me")
+	object, err := f.mgr.Get(file)
+	if err != nil {
+		err = errors.WithMessage(err, Name)
+	}
+	return object, err
 }
 
 func (f *Filesystem) Name() string {
@@ -83,7 +120,7 @@ func (f *Filesystem) Put(dst string, src io.Reader, size int64) (savePath string
 	//创建本地文件
 	dst = path.Join(f.BasePath, dst)
 	if src == nil {
-		dst = path.Join(dst, config.Config.LocalStore.Ignore)
+		dst = path.Join(dst, config.Config.S3.Ignore)
 	}
 	err = tools.CheckPath(dst)
 	if err != nil {
@@ -114,53 +151,33 @@ func (f *Filesystem) Exists(file string) (bool, error) {
 }
 
 func (f *Filesystem) FileInfo(file string) (interface{}, error) {
-	dir := filepath.Join(f.BasePath, file)
-	info, err := os.Stat(dir)
-	return info, err
+	objectInfo, err := f.mgr.Stat(file)
+	if err != nil {
+		return nil, errors.WithMessage(err, Name)
+	}
+	return NewFileInfo(objectInfo), nil
 }
 
 func (f *Filesystem) PathInfo(pathStr string) (interface{}, error) {
 	//die:=path.Dir(path1)
-	dir := filepath.Join(f.BasePath, pathStr)
-	fileInfoList, err := ioutil.ReadDir(dir)
-	//var info helper.DirInfo
-	//info.Path = path1
-	//var filelist []*helper.Entries
-	//for _, v := range fileInfoList {
-	//	var e helper.Entries
-	//	e.Name = v.Name()
-	//	e.FileSize = v.Size()
-	//	e.IsDirectory = v.IsDir()
-	//	e.Mode = v.Mode()
-	//	e.Mtime = v.ModTime()
-	//	e.FullPath = filepath.Join(path1, e.Name)
-	//	e.URLDir = f.baseURL + e.FullPath
-	//	if e.IsDirectory {
-	//		e.Type = "文件夹"
-	//	} else {
-	//		e.Type = path.Ext(e.Name)
-	//		e.Type = e.Type[1:len(e.Type)]
-	//	}
-	//	if path.Ext(e.Name) != config.Config.LocalStore.Ignore {
-	//		filelist = append(filelist, &e)
-	//	}
-	//}
-	//if err != nil {
-	//	beego.Error(err)
-	//}
-	//info.Entries = filelist
-	info := helper.GetDirInfo(pathStr, f.BaseURL(), fileInfoList)
-	dTree := make(map[string]interface{})
-	dTree["info"] = info
-	lt := tools.GetDirList(filepath.Join(f.BasePath, "/"), "/")
+	err, _, objectInfo := f.mgr.List(pathStr)
+	if err != nil {
+		return nil, errors.WithMessage(err, Name)
+	}
+	pathinfo := helper.GetDirInfo(pathStr, f.BaseURL(), objectInfo)
+	fTree := f.mgr.ListTree(f.BasePath)
 	var nt tools.DirBody
 	nt.Dir = "/"
 	nt.Label = "全部文件夹"
-	nt.Children = lt
+	nt.Children = fTree
 	nt.Icon = "el-icon-folder-add"
+	dTree := make(map[string]interface{})
 	dTree["tree"] = nt
-	return dTree, err
+	dTree["info"] = pathinfo
+	//return NewFileInfo(objectInfo[0]), nil
+	//return objectInfo, nil
 	//panic("implement me")
+	return dTree, nil
 }
 
 func (s *Filesystem) GetDir(dir string) (interface{}, error) {
@@ -224,7 +241,7 @@ func (f *Filesystem) Close() error {
 func (f *Filesystem) Search(seachStr string) interface{} {
 	//panic("implement me")
 	filelist := make([]*helper.Entries, 0)
-	fs := helper.SearchFileList(filepath.Join(f.BasePath, "/"), "/", seachStr, f.baseURL, config.Config.LocalStore.Ignore, filelist)
+	fs := helper.SearchFileList(filepath.Join(f.BasePath, "/"), "/", seachStr, f.BaseURL(), config.Config.S3.Ignore, filelist)
 	dTree := make(map[string]interface{})
 	var info helper.DirInfo
 	info.Path = "/搜索:" + seachStr

@@ -5,16 +5,13 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-
-	//"github.com/qiaogw/pkg/conf"
-	"github.com/qiaogw/pkg/config"
 	"github.com/qiaogw/pkg/tools"
 
 	"os"
 )
 
-// Key 密钥文件生成
-func GenKey(bits int) error {
+// GenKey 密钥文件生成
+func GenKey(bits int,jwtPublicPath,jwtPrivatePath string) error {
 	// 生成私钥文件
 	privateKey, err := rsa.GenerateKey(rand.Reader, bits)
 	if err != nil {
@@ -25,8 +22,8 @@ func GenKey(bits int) error {
 		Type:  "私钥",
 		Bytes: derStream,
 	}
-	err = tools.CheckPath(config.Config.JwtPrivatePath)
-	file, err := os.Create(config.Config.JwtPrivatePath)
+	err = tools.CheckPath(jwtPrivatePath)
+	file, err := os.Create(jwtPrivatePath)
 	if err != nil {
 		return err
 	}
@@ -44,8 +41,8 @@ func GenKey(bits int) error {
 		Type:  "公钥",
 		Bytes: derPkix,
 	}
-	err = tools.CheckPath(config.Config.JwtPublicPath)
-	file, err = os.Create(config.Config.JwtPublicPath)
+	err = tools.CheckPath(jwtPublicPath)
+	file, err = os.Create(jwtPublicPath)
 	if err != nil {
 		return err
 	}
@@ -56,10 +53,8 @@ func GenKey(bits int) error {
 	return nil
 }
 
-/*
- * 生成RSA公钥和私钥并保存在对应的目录文件下
- * 参数bits: 指定生成的秘钥的长度, 单位: bit
- */
+// RsaGenKey 生成RSA公钥和私钥并保存在对应的目录文件下
+// 参数bits: 指定生成的秘钥的长度, 单位: bit
 func RsaGenKey(bits int, privateFileName, publicFileName string) error {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -96,9 +91,7 @@ func RsaGenKey(bits int, privateFileName, publicFileName string) error {
 	return nil
 }
 
-/*
- * RSA公钥加密
- */
+// RSAEncrypt RSA公钥加密
 func RSAEncrypt(src []byte, filename string) ([]byte, error) {
 	// 根据文件名读出文件内容
 	file, err := os.Open(filename)
@@ -130,9 +123,7 @@ func RSAEncrypt(src []byte, filename string) ([]byte, error) {
 	return result, err
 }
 
-/*
- * RSA私钥解密
- */
+//RSADecryptRSA私钥解密
 func RSADecrypt(src []byte, filename string) ([]byte, error) {
 	// 根据文件名读出内容
 	file, err := os.Open(filename)

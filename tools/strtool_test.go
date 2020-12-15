@@ -271,7 +271,7 @@ func TestGetTree(t *testing.T) {
 
 	type args struct {
 		access []map[string]interface{}
-		pid    int
+		pid    string
 		//pTree  *map[string]interface{}
 	}
 	tests := []struct {
@@ -280,7 +280,7 @@ func TestGetTree(t *testing.T) {
 		want map[string]interface{}
 	}{
 		// TODO: Add test cases.
-		{"testint", args{ps, 0}, wt},
+		{"testint", args{ps, "0"}, wt},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

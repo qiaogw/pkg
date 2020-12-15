@@ -5,8 +5,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"time"
-
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/cache"
 	_ "github.com/astaxie/beego/cache/memcache"
@@ -15,6 +13,7 @@ import (
 	"github.com/astaxie/beego/orm"
 	"github.com/pkg/errors"
 	"github.com/qiaogw/pkg/config"
+	"time"
 )
 
 var cc cache.Cache
@@ -196,8 +195,6 @@ func DelCache(key string) error {
 // Encode 用gob进行数据编码
 func Encode(data interface{}) ([]byte, error) {
 	gob.Register(time.Time{})
-	//val := reflect.ValueOf(data)
-	//beego.Debug(val)
 	gob.Register(orm.ParamsList{})
 	gob.Register(map[string]interface{}{})
 	gob.Register(data)

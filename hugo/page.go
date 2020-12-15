@@ -1,12 +1,11 @@
 package hugo
 
 import (
+	"github.com/njones/particle"
+	"github.com/qiaogw/pkg/tools"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-
-	"github.com/njones/particle"
-	"github.com/qiaogw/pkg/tools"
 )
 
 func (c *SiteConfig) GetPageList(hugoConfig *Config, menu string) (flist []os.FileInfo, err error) {

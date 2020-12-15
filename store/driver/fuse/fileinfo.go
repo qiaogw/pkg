@@ -1,11 +1,10 @@
-package s3
+package fuse
 
 import (
 	"os"
 	"strings"
 	"time"
 
-	"github.com/astaxie/beego"
 	"github.com/minio/minio-go/v7"
 	//minio "github.com/minio/minio-go"
 )
@@ -19,14 +18,7 @@ type fileInfo struct {
 }
 
 func (f *fileInfo) Name() string {
-	pop := strings.LastIndex(f.objectInfo.Key, "/")
-	beego.Debug(f.objectInfo.Key, pop)
-	name := f.objectInfo.Key
-	if pop > -1 {
-		name = f.objectInfo.Key[pop:]
-	}
-
-	return name
+	return f.objectInfo.Key
 }
 
 func (f *fileInfo) Size() int64 {

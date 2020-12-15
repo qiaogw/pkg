@@ -1,7 +1,8 @@
-package s3
+package fuse
 
 import (
 	"context"
+	"path/filepath"
 
 	"github.com/qiaogw/pkg/tools"
 
@@ -166,7 +167,7 @@ func (s *S3Manager) Remove(ppath string) error {
 	objectName := strings.TrimPrefix(ppath, `/`)
 	opts := minio.RemoveObjectOptions{
 		GovernanceBypass: true,
-		//VersionID:        "myversionid",
+		VersionID:        "myversionid",
 	}
 	return s.client.RemoveObject(context.Background(), s.bucketName, objectName, opts)
 }
@@ -353,19 +354,19 @@ func (s *S3Manager) List(ppath string, sortBy ...string) (err error, exit bool, 
 
 func (s *S3Manager) ListTree(dirpath string) []tools.DirBody {
 	var allFile []tools.DirBody
-	// _, _, dirs := s.List(dirpath)
-	// for _, x := range dirs {
-	// 	var chiledren tools.DirBody
-	// 	if x.IsDir() {
-	// 		realPath := filepath.Join(dirpath, x.Name())
-	// 		chiledren.Label = x.Name()
-	// 		chiledren.Dir = realPath
-	// 		chiledren.Icon = "el-icon-folder"
-	// 		chiledren.Children = append(chiledren.Children, s.ListTree(realPath)...)
-	// 		//beego.Debug(chiledrens)
-	// 		allFile = append(allFile, chiledren)
-	// 	}
-	// }
+	_, _, dirs := s.List(dirpath)
+	for _, x := range dirs {
+		var chiledren tools.DirBody
+		if x.IsDir() {
+			realPath := filepath.Join(dirpath, x.Name())
+			chiledren.Label = x.Name()
+			chiledren.Dir = realPath
+			chiledren.Icon = "el-icon-folder"
+			chiledren.Children = append(chiledren.Children, s.ListTree(realPath)...)
+			//beego.Debug(chiledrens)
+			allFile = append(allFile, chiledren)
+		}
+	}
 	return allFile
 }
 

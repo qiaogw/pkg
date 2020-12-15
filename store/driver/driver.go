@@ -3,14 +3,11 @@ package driver
 import (
 	"io"
 
+	"net/url"
+	"sort"
+
 	"github.com/fatih/color"
 	"github.com/qiaogw/pkg/logs"
-
-	//"io/ioutil"
-	//"mime/multipart"
-	"net/url"
-	//"path"
-	"sort"
 
 	"github.com/qiaogw/pkg/errors"
 )
@@ -21,15 +18,15 @@ var (
 )
 
 type Result struct {
-	FileID            int64
-	FileName          string
-	FileURL           string
-	FileType          string
-	FileSize          int64
-	SavePath          string
-	Md5               string
-	Addon             interface{}
-	fileNameGenerator func(string) (string, error)
+	FileID   int64
+	FileName string
+	FileURL  string
+	FileType string
+	FileSize int64
+	SavePath string
+	Md5      string
+	Addon    interface{}
+	// fileNameGenerator func(string) (string, error)
 }
 
 // Sizer 尺寸接口

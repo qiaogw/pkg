@@ -3,21 +3,18 @@ package seaweed
 import (
 	"bytes"
 	"encoding/json"
-
 	"github.com/astaxie/beego"
 	"github.com/qiaogw/pkg/config"
-
 	//"io/ioutil"
 	"strings"
 
 	//"fmt"
+	"github.com/linxGnu/goseaweedfs"
 	"io"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
-
-	"github.com/linxGnu/goseaweedfs"
 	"github.com/qiaogw/pkg/store"
 	"github.com/qiaogw/pkg/store/driver/local"
 	"github.com/qiaogw/pkg/store/helper"

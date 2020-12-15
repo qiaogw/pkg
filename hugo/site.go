@@ -1,14 +1,13 @@
 package hugo
 
 import (
-	"os"
-	"path/filepath"
-
 	"github.com/go-cmd/cmd"
 	"github.com/naoina/toml"
 	"github.com/pkg/errors"
 	"github.com/qiaogw/pkg/logs"
 	"github.com/qiaogw/pkg/tools"
+	"os"
+	"path/filepath"
 )
 
 //var (
@@ -114,7 +113,7 @@ func (c *SiteConfig) BuildSite(hugoConfig *Config) (err error) {
 func SaveConfig(path string, config interface{}) error {
 	dir := filepath.Dir(path)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err := os.Mkdir(dir, os.ModePerm)
+		err := os.Mkdir(dir, 0775)
 		if err != nil {
 			return errors.Wrapf(err, "creating dir %s", dir)
 		}

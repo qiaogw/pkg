@@ -3,7 +3,6 @@ package seaweed
 import (
 	"context"
 	"fmt"
-	"github.com/chrislusf/seaweedfs/weed/storage/needle"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/chrislusf/seaweedfs/weed/storage/needle"
 
 	"google.golang.org/grpc"
 
@@ -292,7 +293,7 @@ func (worker *FileCopyWorker) uploadFileAsOne(task FileCopyTask, f *os.File) err
 				Replication: worker.options.replication,
 				Collection:  worker.options.collection,
 				TtlSec:      worker.options.ttlSec,
-				ParentPath:  task.destinationUrlPath,
+				// ParentPath:  task.destinationUrlPath,
 			}
 
 			assignResult, assignError = client.AssignVolume(context.Background(), request)
@@ -385,7 +386,7 @@ func (worker *FileCopyWorker) uploadFileInChunks(task FileCopyTask, f *os.File, 
 					Replication: worker.options.replication,
 					Collection:  worker.options.collection,
 					TtlSec:      worker.options.ttlSec,
-					ParentPath:  task.destinationUrlPath,
+					// ParentPath:  task.destinationUrlPath,
 				}
 
 				assignResult, assignError = client.AssignVolume(context.Background(), request)
@@ -520,7 +521,7 @@ func (worker *FileCopyWorker) uploadFileDataAsOne(task FileCopyTask, f *os.File)
 				Replication: worker.options.replication,
 				Collection:  worker.options.collection,
 				TtlSec:      worker.options.ttlSec,
-				ParentPath:  task.destinationUrlPath,
+				// ParentPath:  task.destinationUrlPath,
 			}
 
 			assignResult, assignError = client.AssignVolume(context.Background(), request)

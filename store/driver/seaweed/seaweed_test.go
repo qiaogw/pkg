@@ -17,7 +17,7 @@ import (
 )
 
 func TestSeaweedfs(t *testing.T) {
-	err := config.LoadConfig("/Users/qgw/proj/github.com/qiaogw//conf/app.toml")
+	err := config.LoadConfig()
 	r := NewSeaweedfs(`test`)
 	fmt.Println(r.baseURL)
 	err = r.DeleteDir(`/buckets/buck1/s3data`)

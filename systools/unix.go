@@ -20,7 +20,7 @@ import (
 func KillPid(pid string) error {
 	err := syscall.Kill(tools.StrToInt(pid), syscall.SIGHUP)
 	if err != nil {
-		logs.Logger.Error("killing process failed", zap.Error(err), zap.String("pid", pid))
+		logs.Error("killing process failed", zap.Error(err), zap.String("pid", pid))
 		return err
 	}
 	return nil

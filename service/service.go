@@ -10,8 +10,8 @@ import (
 
 	"github.com/kardianos/service"
 	"github.com/qiaogw/com"
-	"github.com/qiaogw/log"
 	"github.com/qiaogw/pkg/config"
+	"github.com/qiaogw/pkg/logs"
 )
 
 func ValidServiceAction(action string) error {
@@ -25,26 +25,41 @@ func ValidServiceAction(action string) error {
 
 // New 以服务的方式启动
 // 服务支持的操作有：
-// qiaomu service install  	-- 安装服务
-// qiaomu service uninstall  -- 卸载服务
-// qiaomu service start 		-- 启动服务
-// qiaomu service stop 		-- 停止服务
-// qiaomu service restart 	-- 重启服务
+// emanager service install  	-- 安装服务
+// emanager service uninstall  -- 卸载服务
+// emanager service start 		-- 启动服务
+// emanager service stop 		-- 停止服务
+// emanager service restart 	-- 重启服务
 func New(cfg *Config, action string) error {
 	p := NewProgram(cfg)
-	s, err := service.New(p, &p.Config.Config)
+	p.logger.Infof("servic %s new  %s ...", p.DisplayName, action)
+	sys := service.ChosenSystem()
+	s, err := sys.New(p, &p.Config.Config)
+
 	if err != nil {
+		p.logger.Error("servic new   ...", p.DisplayName)
 		return err
 	}
 	p.service = s
 	// Service
-	if action != `run` {
-		if err := ValidServiceAction(action); err != nil {
-			return err
+	if action != "run" {
+		//if err := ValidServiceAction(action); err != nil {
+		//	p.logger.Errorf(" ValidServiceAction servic action  %s err is %v  ...", action, err)
+		//	return err
+		//}
+		logs.Debug(action)
+		err = service.Control(s, action)
+		if err != nil {
+			p.logger.Errorf("Valid action  %s err is %v  ", action, err)
+			logs.Fatal(err)
 		}
-		return service.Control(s, action)
+		return err
 	}
-	return s.Run()
+	err = s.Run()
+	if err != nil {
+		p.logger.Errorf("servic run  %s err is %v  ...", p.DisplayName, err)
+	}
+	return err
 }
 
 func getPidFiles() []string {
@@ -60,7 +75,7 @@ func getPidFiles() []string {
 		return nil
 	})
 	if err != nil {
-		log.Error(err)
+		logs.Error(err)
 	}
 	return pidFile
 }
@@ -69,7 +84,7 @@ func NewProgram(cfg *Config) *program {
 	pidFile := config.Config.GetPidPath()
 	err := os.MkdirAll(pidFile, os.ModePerm)
 	if err != nil {
-		log.Error(err)
+		logs.Error(err)
 	}
 	pidName := config.Config.AppName + ".pid"
 	pidFile = filepath.Join(pidFile, pidName)
@@ -106,6 +121,7 @@ func (p *program) Start(s service.Service) (err error) {
 	if filepath.Base(p.Exec) == p.Exec {
 		p.fullExec, err = exec.LookPath(p.Exec)
 		if err != nil {
+			p.logger.Errorf("Failed to find executable %q: %v", p.Exec, err)
 			return fmt.Errorf("Failed to find executable %q: %v", p.Exec, err)
 		}
 	} else {
@@ -118,11 +134,12 @@ func (p *program) Start(s service.Service) (err error) {
 }
 
 func (p *program) createCmd() {
-	p.logger.Infof("cmd is : %s , arg is : %s", p.fullExec, p.Args)
 	if len(p.Args) < 1 {
 		p.Args = append(p.Args, "start")
 	}
 	p.cmd = exec.Command(p.fullExec, p.Args...)
+	//bucket := "s3:" + config.Config.S3.Bucket
+	//p.cmd = s3cli.Gets3Cmd(bucket)
 	p.cmd.Dir = p.Dir
 	p.cmd.Env = append(os.Environ(), p.Env...)
 	if p.Stderr != nil {
@@ -179,7 +196,7 @@ func (p *program) close() {
 }
 
 func (p *program) run() {
-	p.logger.Infof("Starting %s", p.DisplayName)
+	p.logger.Infof("Starting runing %s", p.DisplayName)
 	//return
 	//如果调用的程序停止了，则本服务同时也停止
 	defer p.close()
@@ -187,7 +204,10 @@ func (p *program) run() {
 	if err == nil {
 		p.logger.Info("APP PID:", p.cmd.Process.Pid)
 		ioutil.WriteFile(p.pidFile, []byte(strconv.Itoa(p.cmd.Process.Pid)), os.ModePerm)
-		err = p.cmd.Wait()
+		//err = p.cmd.Wait()
+		if err := p.cmd.Wait(); err != nil {
+			p.logger.Error("Failed to Wait cmd: ", err) //
+		}
 	}
 	if err != nil {
 		p.logger.Error("Error running:", err)

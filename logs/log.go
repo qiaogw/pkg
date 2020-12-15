@@ -6,6 +6,7 @@ package logs
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -108,7 +109,7 @@ func InitLogger(mode string, fileName string, maxSize, maxBackups, maxAge int, c
 	// From a zapcore.Core, it's easy to construct a Logger.
 	Logger = zap.New(core, zap.AddCaller())
 	//defer Logger.Sync()
-	//initlog(fileName, maxSize, maxBackups, maxAge)
+	// initlog(fileName, maxSize, maxBackups, maxAge)
 	initlogs(mode, fileName, maxSize, maxBackups, maxAge, compress, enableKafka, kafkaAddress)
 }
 
@@ -135,24 +136,6 @@ func NewEncoderConfig() zapcore.EncoderConfig {
 }
 
 //
-//func initlog(fileName string, maxSize, maxBackups, maxAge int) {
-//	beego.SetLogFuncCall(true)
-//	// 打印错误级别的日志
-//	if beego.BConfig.RunMode == "dev" {
-//		beego.SetLevel(beego.LevelDebug)
-//		// orm.Debug = true
-//	} else {
-//		beego.SetLevel(beego.LevelInformational)
-//	}
-//
-//	cfg := map[string]interface{}{
-//		"filename": fileName,
-//		"maxsize":  maxSize * 1024 * 1024,
-//		"maxdays":  maxAge,
-//	}
-//	cfgstr, _ := json.Marshal(cfg)
-//	beego.SetLogger("file", string(cfgstr))
-//}
 
 func initlogs(mode string, fileName string, maxSize, maxBackups, maxAge int, compress bool, enableKafka bool, kafkaAddress []string) {
 
@@ -171,6 +154,8 @@ func initlogs(mode string, fileName string, maxSize, maxBackups, maxAge int, com
 	// Compress    bool   // 是否压缩
 	// Caller
 	//fmt.Println(mode, fileName, level, false, option)
+	dir := filepath.Dir(fileName)
+	fileName = filepath.Join(dir, "app.log")
 	Init(mode, fileName, level, false, option...)
 	//Init("prod", "/Users/qgw/proj/emanager/logs/emanager.log", "info", false)
 }

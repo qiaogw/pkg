@@ -9,8 +9,8 @@ import (
 	"github.com/kardianos/service"
 	"github.com/pkg/errors"
 	"github.com/qiaogw/com"
-	"github.com/qiaogw/log"
 	"github.com/qiaogw/pkg/config"
+	"github.com/qiaogw/log"
 )
 
 type Options struct {
@@ -46,6 +46,7 @@ func Run(options *Options, action string) error {
 	conf.Dir = com.SelfDir()
 	//conf.Exec = os.Args[0]
 	conf.Exec = os.Args[0]
+	//logs.Error(os.Args[0])
 	if len(os.Args) > 3 {
 		conf.Args = os.Args[3:]
 	}
@@ -58,11 +59,11 @@ func Run(options *Options, action string) error {
 		}
 	}
 
-	fileTarget := log.NewFileTarget()
-	fileTarget.FileName = filepath.Join(logDir, `app_{date:20060102}.log`) //按天分割日志
-	fileTarget.MaxBytes = 10 * 1024 * 1024
-	fileTarget.MaxLevel = log.LevelInfo
-	log.SetTarget(fileTarget)
+	//fileTarget := log.NewFileTarget()
+	//fileTarget.FileName = filepath.Join(logDir, `app_{date:20060102}.log`) //按天分割日志
+	//fileTarget.MaxBytes = 10 * 1024 * 1024
+	//fileTarget.MaxLevel = log.LevelInfo
+	//log.SetTarget(fileTarget)
 
 	conf.Stderr = log.Writer(log.LevelError)
 	conf.Stdout = log.Writer(log.LevelInfo)

@@ -92,7 +92,7 @@ func (zapAdapter *zapAdapter) Build(mode string) {
 
 	// 打印错误级别的日志
 	highPriority := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
-		return lvl >= zapcore.ErrorLevel
+		return lvl >= zapcore.InfoLevel
 	})
 	// 打印所有级别的日志
 	lowPriority := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {

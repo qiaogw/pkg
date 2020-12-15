@@ -2,39 +2,52 @@ package redis
 
 import (
 	"encoding/json"
-
-	"github.com/astaxie/beego"
 	"github.com/gomodule/redigo/redis"
-	"github.com/qiaogw/pkg/config"
+	"time"
 )
 
-var RedisPool *redis.Pool
+var (
+	RedisPool *redis.Pool
+	//DefautConfig RedisConfig
+)
 
-func init() {
-	//pool = &redis.Pool{
-	//	MaxIdle:     16,
-	//	MaxActive:   1024,
-	//	IdleTimeout: 300,
-	//	Dial: func() (redis.Conn, error) {
-	//		return redis.Dial("tcp", "localhost:6379")
-	//	},
-	//}
+type RedisConfig struct {
+	Enable      bool          `label:"是否启用"`
+	Key         string        `label:"Redis collection 的名称"`
+	Addr        string        `label:"地址"`
+	Password    string        `label:"密码"`
+	DBNum       int           `label:"数据库"`
+	MaxActive   int           `label:"最大连接数"`
+	MaxIdle     int           `label:"最大空闲连接数"`
+	IdleTimeout time.Duration `label:"空闲连接超时时间"`
+	Wait        bool          `label:"如果超过最大连接，是报错，还是等待。"`
+}
+
+func Init(conf RedisConfig) {
+	if conf.IdleTimeout < 1000 {
+		conf.IdleTimeout = 1000
+	}
 	RedisPool = &redis.Pool{
-		MaxIdle:     config.Config.Redis.MaxIdle,
-		MaxActive:   config.Config.Redis.MaxActive,
-		IdleTimeout: config.Config.Redis.IdleTimeout,
-		Wait:        config.Config.Redis.Wait,
+		MaxIdle:     conf.MaxIdle,
+		MaxActive:   conf.MaxActive,
+		IdleTimeout: conf.IdleTimeout,
+		Wait:        conf.Wait,
 		// Other pool configuration not shown in this example.
 		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", config.Config.Redis.Addr)
+			setdb := redis.DialDatabase(conf.DBNum)
+			setPasswd := redis.DialPassword(conf.Password)
+			setWriteTimeOut := redis.DialWriteTimeout(conf.IdleTimeout)
+			setReadTimeOut := redis.DialReadTimeout(conf.IdleTimeout)
+			SetConnetTimeOut := redis.DialConnectTimeout(conf.IdleTimeout)
+			c, err := redis.Dial("tcp", conf.Addr, setPasswd, setdb, setReadTimeOut, setWriteTimeOut, SetConnetTimeOut)
 			if err != nil {
 				return nil, err
 			}
-			//if _, err := c.Do("AUTH", config.Config.Redis.Password); err != nil {
+			//if _, err := c.Do("AUTH", conf.Password); err != nil {
 			//	c.Close()
 			//	return nil, err
 			//}
-			if _, err := c.Do("SELECT", config.Config.Redis.DBNum); err != nil {
+			if _, err := c.Do("SELECT", conf.DBNum); err != nil {
 				c.Close()
 				return nil, err
 			}
@@ -46,10 +59,7 @@ func init() {
 func ListAdd(vName string, evt interface{}) error {
 	c := RedisPool.Get()
 	defer c.Close()
-	beego.Debug(vName, evt)
 	_, err := c.Do("RPush", vName, evt)
-	//c.Flush()
-	//_, err := c.Receive()
 	return err
 }
 
@@ -70,13 +80,8 @@ func ListGet(vName string, begin, end int, ul interface{}) (err error) {
 func ListStructAdd(vName string, evt interface{}) error {
 	c := RedisPool.Get()
 	defer c.Close()
-	//id := evt.(map[string]int)["Id"]
-	//ids := strconv.Itoa(id)
-	//_, err := c.Do("HMSET", redis.Args{}.Add(vName+"_"+ids).AddFlat(evt)...)
 	se, _ := json.Marshal(evt)
 	_, err := c.Do("RPush", vName, se)
-	//c.Flush()
-	//_, err := c.Receive()
 	return err
 }
 
@@ -126,7 +131,6 @@ func Remove(vName string) error {
 func StructGetAll(vName interface{}, ul interface{}) (err error) {
 	c := RedisPool.Get()
 	defer c.Close()
-	beego.Debug(vName)
 	result, err := redis.Values(c.Do("hgetall", vName))
 	err = redis.ScanStruct(result, ul)
 	//ul, err = redis.StringMap(c.Do("hgetall", vName))

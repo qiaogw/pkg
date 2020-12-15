@@ -9,10 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/astaxie/beego"
-	"github.com/qiaogw/pkg/logs"
 	"github.com/theckman/go-flock"
-	"go.uber.org/zap"
 )
 
 //CheckPath 检查文件夹是否存在，不存在则创建
@@ -38,25 +35,23 @@ func GetFileSuffix(s string) string {
 }
 
 // LockOrDie 加锁文件夹
-func LockOrDie(dir string) *flock.Flock {
+func LockOrDie(dir string) (*flock.Flock,error) {
 	f := flock.New(dir)
 	success, err := f.TryLock()
 	if err != nil {
-		logs.Logger.Error("Locking qyadmin", zap.Error(err))
+		return nil, err
 	}
-
 	if !success {
-		logs.Logger.Error("qyadmin is locked", zap.Error(err))
+		return nil, err
 	}
-
-	return f
+	return f,nil
 }
 
 // MakeDirectory 创建 directory if is not exists
 func MakeDirectory(dir string) error {
 	if _, err := os.Stat(dir); err != nil {
 		if os.IsNotExist(err) {
-			return os.Mkdir(dir, os.ModePerm)
+			return os.Mkdir(dir, 0775)
 		}
 		return err
 	}
@@ -208,6 +203,10 @@ func WriteFile(path, info string, coverType bool) (err error) {
 	} else {
 		fl, err = os.Create(path) //创建文件
 	}
+	if err != nil {
+		err = errors.New(path + "打开文件失败！")
+		return
+	}
 	defer fl.Close()
 	n, err := fl.WriteString(info + "\n")
 	if err == nil && n < len(info) {
@@ -225,11 +224,15 @@ func WriteFileByte(path string, info []byte, coverType bool) (err error) {
 		flag = os.O_APPEND | os.O_TRUNC | os.O_WRONLY
 	}
 	if CheckFileIsExist(path) { //如果文件存在
-		fl, err = os.OpenFile(path, flag, 0666) //打开文件
+		fl, err = os.OpenFile(path, flag, os.ModePerm) //打开文件
 	} else {
 		fl, err = os.Create(path) //创建文件
 	}
 	defer fl.Close()
+	if err != nil {
+		// err = errors.New(path + "打开文件失败！")
+		return
+	}
 	n, err := fl.Write(info)
 	if err == nil && n < len(info) {
 		err = errors.New(path + "写入失败！")
@@ -264,7 +267,6 @@ func GetDirList(dirpath, pathStr string) []DirBody {
 			chiledren.Dir = realDir
 			chiledren.Icon = "el-icon-folder"
 			chiledren.Children = append(chiledren.Children, GetDirList(realPath, realDir)...)
-			//beego.Debug(chiledrens)
 			allFile = append(allFile, chiledren)
 		}
 	}
@@ -315,8 +317,25 @@ func EmptyFloder(dir string) error {
 		if err := os.Remove(dir); err != nil {
 			return err
 		} else {
-			beego.Debug("删除成功:", dir)
+			return err
 		}
 	}
 	return nil
+}
+func substr(s string, pos, length int) (string, string) {
+	runes := []rune(s)
+	l := pos + length
+	if l > len(runes) {
+		l = len(runes)
+	}
+	return string(runes[pos : l+1]), string(runes[l+1:])
+}
+
+func GetParentDirectory(dirctory, prefix string) (string, string, bool) {
+	index := strings.Index(dirctory, prefix)
+	if index > -1 {
+		res, eres := substr(dirctory, 0, index)
+		return res, eres, true
+	}
+	return dirctory, "", false
 }

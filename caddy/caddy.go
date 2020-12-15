@@ -5,16 +5,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
-	"github.com/astaxie/beego"
-	"github.com/qiaogw/pkg/consts"
-
-	//"google.golang.org/grpc/examples/features/proto/echo"
+	"github.com/qiaogw/pkg/tools"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -24,11 +19,7 @@ import (
 	_ "github.com/caddyserver/caddy/caddyhttp"
 	"github.com/caddyserver/caddy/caddytls"
 	"github.com/caddyserver/certmagic"
-
-	//"github.com/webx-top/com"
-	//"github.com/webx-top/echo"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
-	//"github.com/admpub/nging/application/library/msgbox"
 )
 
 var (
@@ -50,7 +41,7 @@ func TrapSignals() {
 	caddy.TrapSignals()
 }
 
-func Fixed(c *Config) {
+func (c *Config) fixed(appName string)(err error) {
 	if len(c.CAUrl) == 0 {
 		c.CAUrl = DefaultConfig.CAUrl
 	}
@@ -63,32 +54,41 @@ func Fixed(c *Config) {
 	if len(c.CPU) == 0 {
 		c.CPU = DefaultConfig.CPU
 	}
-	path, _ := os.Getwd()
-	pidFile := filepath.Join(path, consts.DefaultSystemDataDirName)
-	err := os.MkdirAll(pidFile, os.ModePerm)
+	//path, _ := os.Getwd()
+	//pidFile := filepath.Join(path, consts.DefaultSystemDataDirName)
+	//err := os.MkdirAll(pidFile, os.ModePerm)
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//c.Caddyfile = filepath.Join(path, consts.DefaultConfigDirName, consts.DefaultCaddyfile)
+	//pidFile = filepath.Join(pidFile, `caddy.pid`)
+	//c.PidFile = pidFile
+	//if len(c.LogFile) == 0 {
+	//	logFile := filepath.Join(path, consts.DefaultLogDirName)
+	//	err := os.MkdirAll(logFile, os.ModePerm)
+	//	if err != nil {
+	//		log.Println(err)
+	//	}
+	//	c.LogFile = filepath.Join(logFile, consts.DefaultCaddyLogFileName)
+	//} else {
+	//	err := os.MkdirAll(filepath.Dir(c.LogFile), os.ModePerm)
+	//	if err != nil {
+	//		log.Println(err)
+	//	}
+	//}
+	err=tools.CheckPath(c.LogFile)
 	if err != nil {
-		log.Println(err)
+		return
 	}
-	c.Caddyfile = filepath.Join(path, consts.DefaultConfigDirName, consts.DefaultCaddyfile)
-	pidFile = filepath.Join(pidFile, `caddy.pid`)
-	c.PidFile = pidFile
-	if len(c.LogFile) == 0 {
-		logFile := filepath.Join(path, consts.DefaultLogDirName)
-		err := os.MkdirAll(logFile, os.ModePerm)
-		if err != nil {
-			log.Println(err)
-		}
-		c.LogFile = filepath.Join(logFile, consts.DefaultCaddyLogFileName)
-	} else {
-		err := os.MkdirAll(filepath.Dir(c.LogFile), os.ModePerm)
-		if err != nil {
-			log.Println(err)
-		}
+	tools.CheckPath(c.PidFile)
+	if err != nil {
+		return
 	}
-	c.appName = `qyadmin`
+	c.appName = appName
 	c.appVersion = DefaultVersion
 	c.Agreed = true
 	c.ctx, c.cancel = context.WithCancel(context.Background())
+	return
 }
 
 type Config struct {
@@ -146,11 +146,9 @@ func (c *Config) Start() error {
 	// Start your engines
 	c.instance, err = caddy.Start(caddyfile)
 	if err != nil {
-		beego.Error(err)
 		return err
 	}
-	beego.Debug(c)
-	beego.Info(`Caddy`, `Server has been successfully started at `+now())
+	log.Println(`Caddy`, `Server has been successfully started at `+now())
 
 	// Twiddle your thumbs
 	c.instance.Wait()
@@ -162,7 +160,7 @@ func (c *Config) watchingSignal() {
 	debug := false
 	go func() {
 		if debug {
-			beego.Info(`Caddy`, `listen return ==> `+now())
+			log.Println(`Caddy`, `listen return ==> `+now())
 		}
 		in := bufio.NewReader(os.Stdin)
 		for {
@@ -171,7 +169,7 @@ func (c *Config) watchingSignal() {
 				return
 			default:
 				if debug {
-					beego.Info(`Caddy`, `reading ==> `+now())
+					log.Println(`Caddy`, `reading ==> `+now())
 				}
 				var Lf byte = '\n'
 				var StrLF string = "\n"
@@ -179,12 +177,12 @@ func (c *Config) watchingSignal() {
 				input, _ := in.ReadString(Lf)
 				if input == StrLF || input == StrCRLF {
 					if debug {
-						beego.Info(`Caddy`, `restart ==> `+now())
+						log.Println(`Caddy`, `restart ==> `+now())
 					}
 					c.Restart()
 				} else {
 					if debug {
-						beego.Info(`Caddy`, `waiting ==> `+now())
+						log.Println(`Caddy`, `waiting ==> `+now())
 					}
 				}
 			}
@@ -193,7 +191,7 @@ func (c *Config) watchingSignal() {
 }
 
 func (c *Config) Restart() error {
-	defer beego.Info(`Caddy`, `Server has been successfully reloaded at `+now())
+	defer log.Println(`Caddy`, `Server has been successfully reloaded at `+now())
 	if c.instance == nil {
 		return nil
 	}
@@ -213,7 +211,7 @@ func (c *Config) Stop() error {
 	c.stopped = true
 	defer func() {
 		c.cancel()
-		beego.Info(`Caddy`, `Server has been successfully stopped at `+now())
+		log.Println(`Caddy`, `Server has been successfully stopped at `+now())
 	}()
 	if c.instance == nil {
 		return nil
@@ -224,7 +222,8 @@ func (c *Config) Status() bool {
 	return c.stopped
 }
 
-func (c *Config) Init() *Config {
+func (c *Config) Init(appName string) (err error){
+	err=c.fixed(appName)
 	certmagic.DefaultACME.Agreed = c.Agreed
 	certmagic.DefaultACME.CA = c.CAUrl
 	certmagic.DefaultACME.DisableHTTPChallenge = c.DisableHTTPChallenge
@@ -235,7 +234,7 @@ func (c *Config) Init() *Config {
 	caddy.Quiet = c.Quiet
 	caddy.RegisterCaddyfileLoader("flag", caddy.LoaderFunc(c.confLoader))
 	caddy.SetDefaultCaddyfileLoader("default", caddy.LoaderFunc(c.defaultLoader))
-
+	log.SetFlags(log.Ldate|log.Lshortfile)
 	// Set up process log before anything bad happens
 	switch c.LogFile {
 	case "stdout":
@@ -248,7 +247,7 @@ func (c *Config) Init() *Config {
 		log.SetOutput(&lumberjack.Logger{
 			Filename:   c.LogFile,
 			MaxSize:    100,
-			MaxAge:     14,
+			MaxAge:     7,
 			MaxBackups: 10,
 		})
 	}
@@ -275,13 +274,12 @@ func (c *Config) Init() *Config {
 		fmt.Println(caddy.DescribePlugins())
 		os.Exit(0)
 	}
-
 	// Set CPU cap
-	err := setCPU(c.CPU)
+	err = setCPU(c.CPU)
 	if err != nil {
 		mustLogFatalf(err.Error())
 	}
-	return c
+	return
 }
 
 // confLoader loads the Caddyfile using the -conf flag.

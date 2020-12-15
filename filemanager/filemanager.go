@@ -3,17 +3,13 @@ package filemanager
 import (
 	"errors"
 	"fmt"
+	"github.com/qiaogw/pkg/charset"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/qiaogw/pkg/charset"
-	//"github.com/admpub/nging/application/library/charset"
-	//"github.com/webx-top/com"
-	//"github.com/webx-top/echo"
 )
 
 var (

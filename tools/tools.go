@@ -1,5 +1,6 @@
 package tools
 
+//RemoveRepeatedElement 数组中删除重复对象
 func RemoveRepeatedElement(arr []interface{}) (newArr []interface{}) {
 	newArr = make([]interface{}, 0)
 	for i := 0; i < len(arr); i++ {

@@ -6,31 +6,20 @@ import (
 	"flag"
 	"io/ioutil"
 
-	"github.com/qiaogw/pkg/config"
-
-	//"github.com/qiaogw/pkg/conf"
-	//"github.com/qiaogw/pkg/config"
 	"time"
 
-	"github.com/qiaogw/pkg/genrsa"
-	"github.com/qiaogw/pkg/logs"
-
-	"github.com/astaxie/beego"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/qiaogw/pkg/genrsa"
 )
 
 //EasyToken token结构
 type EasyToken struct {
 	Appid  string `json:"appid"`
-	Userid int    `json:"userid"`
-	Orgid  int    `json:"orgid"`
+	Userid string `json:"userid"`
 	jwt.StandardClaims
-	Name      string   `json:"username"`
-	OrgName   string   `json:"orgname"`
-	RoleIds   []int    `json:"roleids"`
-	RoleNames []string `json:"rolename"`
-	IsAdmin   bool     `json:"isadmin"`
-	//User      models.User
+	Name    string `json:"username"`
+	IsAdmin bool   `json:"isadmin"`
+	// User      models.User
 }
 
 // 定义秘钥地址
@@ -48,117 +37,92 @@ var (
 )
 
 //genkey 检查秘钥是否存在，若不存在生成秘钥
-func genkey() (err error) {
+func genkey(jwtPublicPath, jwtPrivatePath string) (err error) {
 	var bits int
 	flag.IntVar(&bits, "btghhhhh", 2048, "密钥长度，默认为1024位")
-	err = genrsa.GenKey(bits)
+	err = genrsa.GenKey(bits, jwtPublicPath, jwtPrivatePath)
 	return
 }
 
 //初始化jwt秘钥
-func InitJwt() {
-	verifyBytes, err := ioutil.ReadFile(config.Config.JwtPublicPath)
+func InitJwt(jwtPublicPath, jwtPrivatePath string) (err error) {
+	verifyBytes, err := ioutil.ReadFile(jwtPublicPath)
 	if err != nil {
-		beego.Error(err, config.Config.JwtPublicPath)
-		err = genkey()
+		err = genkey(jwtPublicPath, jwtPrivatePath)
 		if err != nil {
-			logs.Fatal(err)
+			return err
 		}
-		verifyBytes, err = ioutil.ReadFile(config.Config.JwtPublicPath)
+		verifyBytes, err = ioutil.ReadFile(jwtPublicPath)
 		if err != nil {
-			beego.Error(err)
+			return err
 		}
 	}
 	//公钥解密
 	verifyKey, err = jwt.ParseRSAPublicKeyFromPEM(verifyBytes)
 	if err != nil {
-		beego.Error(err)
+		return err
 	}
 
-	signBytes, err := ioutil.ReadFile(config.Config.JwtPrivatePath)
+	signBytes, err := ioutil.ReadFile(jwtPrivatePath)
 
 	if err != nil {
-		logs.Fatal(err)
+		return err
 	}
 	//私钥加密
 	mySigningKey, err = jwt.ParseRSAPrivateKeyFromPEM(signBytes)
-	if err != nil {
-		logs.Fatal(err)
-	}
+	return
 }
 
 //GetToken 获取token
-func (e EasyToken) GetToken() (string, error) {
-	//maxlife, err := beego.AppConfig.Int64("sessiongcmaxlifetime")
-	maxlife := config.Config.TokenExpire
-	//if err != nil {
-	//	logs.Error("获取配置错误！ err is ", err.Error())
-	//	maxlife = 3600
-	//}
-	tokenlife := time.Now().Unix() + maxlife
+func (e EasyToken) GetToken(tokenExpire int64) (string, error) {
+	tokenlife := time.Now().Unix() + tokenExpire
 	// 创建 Claims
 	claims := EasyToken{
 		e.Appid,
 		e.Userid,
-		e.Orgid,
 		jwt.StandardClaims{
 			ExpiresAt: tokenlife,
 			Issuer:    e.Appid,
 			IssuedAt:  time.Now().Unix(),
 		},
 		e.Name,
-		e.OrgName,
-		e.RoleIds,
-		e.RoleNames,
 		e.IsAdmin,
-		//e.User,
+		// e.User,
 	}
 	token := jwt.NewWithClaims(jwt.GetSigningMethod("RS256"), claims)
 	//私钥签发
 	tokenString, err := token.SignedString(mySigningKey)
 	if err != nil {
-		logs.Error(err)
 		return tokenString, err
 	}
-	logs.Info(e.Appid, "为用户 ", e.Userid, "创建了token！")
 	return tokenString, nil
 }
 
 //RefreshGetToken 刷新token
-func (e EasyToken) RefreshGetToken() (string, error) {
-	refreshlife := config.Config.TokenExpire
-	//判断token创建时间至今是否已超过强制登录时间
-	if (time.Now().Unix() - e.IssuedAt) > (refreshlife) {
+func (e EasyToken) refreshGetToken(tokenExpire int64) (string, error) {
+	if (time.Now().Unix() - e.IssuedAt) > (tokenExpire) {
 		return "", errors.New("token创建已超过系统设置，不能刷新")
 	}
-	maxlife := config.Config.TokenExpire
-	tokenlife := time.Now().Unix() + maxlife
+	tokenlife := time.Now().Unix() + tokenExpire
 	// Create the Claims
 	claims := EasyToken{
 		e.Appid,
 		e.Userid,
-		e.Orgid,
 		jwt.StandardClaims{
 			ExpiresAt: tokenlife,
 			Issuer:    e.Appid,
 			IssuedAt:  e.IssuedAt,
 		},
 		e.Name,
-		e.OrgName,
-		e.RoleIds,
-		e.RoleNames,
 		e.IsAdmin,
-		//e.User,
 	}
 
 	token := jwt.NewWithClaims(jwt.GetSigningMethod("RS256"), claims)
 	//私钥签发
 	tokenString, err := token.SignedString(mySigningKey)
 	if err != nil {
-		logs.Fatal(err)
 		return tokenString, err
 	}
-	logs.Info(e.Appid, "为用户 ", e.Userid, "刷新了token！")
 	return tokenString, nil
 }
 
@@ -173,7 +137,6 @@ func ValidateToken(tokenString string) bool {
 	})
 
 	if token == nil {
-		logs.Error(err)
 		return false
 	}
 
@@ -196,7 +159,7 @@ func ValidateToken(tokenString string) bool {
 }
 
 //Parse 验证并获取token对象内容，若令牌过去则刷新
-func Parse(tokenString string) (*EasyToken, string, error) {
+func Parse(tokenString string, tokenExpire int64) (*EasyToken, string, error) {
 	if tokenString == "" {
 		return nil, "", errors.New("Token为空！")
 	}
@@ -205,7 +168,6 @@ func Parse(tokenString string) (*EasyToken, string, error) {
 	})
 
 	if token == nil {
-		logs.Error(err)
 		return nil, "", errors.New("token不工作")
 	}
 	if token.Valid {
@@ -222,7 +184,7 @@ func Parse(tokenString string) (*EasyToken, string, error) {
 			// 令牌已过期或尚未激活
 			if claims, ok := token.Claims.(*EasyToken); ok {
 				//开始刷新令牌
-				ts, err := claims.RefreshGetToken()
+				ts, err := claims.refreshGetToken(tokenExpire)
 				if err != nil {
 					return nil, "", errors.New("token已超过刷新周期，重新登录！")
 				}

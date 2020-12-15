@@ -1,10 +1,13 @@
+// Copyright 2018 cloudy itcloudy@qq.com.  All rights reserved.
+// Use of this source code is governed by a MIT style
+// license that can be found in the LICENSE file.
 package consts
 
 const VERSION = "0.1.0"
 
 //default value
 const (
-	DefaultAppName = "emanager"
+	DefaultAppName = "dadmin"
 	//user upload file url
 	USER_UPLOAD_FILE_URL = "/upload_files/"
 	//system file url
@@ -21,20 +24,22 @@ const (
 	DefaultConfigDirName = "conf"
 
 	// DefaultPidFilename is default filename of pid file
-	DefaultPidFilename = "emanager.pid"
+	DefaultPidFilename = "dadmin.pid"
 
 	// DefaultLockFilename is default filename of lock file
-	DefaultLockFilename = "emanager.lock"
+	DefaultLockFilename = "dadmin.lock"
 	//DefaultLogFileName
-	DefaultLogFileName = "emanager.log"
+	DefaultLogFileName = "dadmin.log"
 	//DefaultCaddyLogFileName
 	DefaultCaddyLogFileName = "caddy.log"
+	//DefaultCaddyPidFileName
+	DefaultCaddyPidFileName = "caddy.pid"
 	// server file dir
 	DefaultSystemDataDirName = "system-data"
 	// user file upload file dir
 	DefaultUserDataDirName = "user-data"
 	// temp file dir
-	DefaultTempDirName = "app-temp"
+	DefaultTempDirName = "dadmin-temp"
 	// only for sqllite3 file dir
 	DefaultCaddyfile       = "Caddyfile"
 	DefaultDbPath          = "DB-data"
@@ -65,5 +70,4 @@ const (
 const (
 	DefaultPage = 1
 	DefaultSize = 20
-	DefaultAuth = "qgw"
 )

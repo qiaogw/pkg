@@ -2,11 +2,15 @@ package helper
 
 import (
 	"errors"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/qiaogw/pkg/s3cli"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/linxGnu/goseaweedfs"
@@ -44,6 +48,8 @@ type Entries struct {
 	Type          string
 	Name          string
 	URLDir        string
+	StorageClass string
+	Restore string
 }
 type FileId struct {
 	volume_id uint32
@@ -163,8 +169,38 @@ func GetInfo(pathStr, url string, v os.FileInfo) (e Entries, err error) {
 		e.Type = "文件夹"
 	} else {
 		e.Type = path.Ext(e.Name)
-		e.Type = e.Type[1:len(e.Type)]
+		if len(e.Type)>0{
+			e.Type = e.Type[1:len(e.Type)]
+		}
 	}
+	sinfo:=v.Sys()
+	rv := reflect.ValueOf(sinfo).Type()
+	if rv.String()=="s3.Object"{
+		ob:=sinfo.(s3.Object)
+		e.StorageClass=*ob.StorageClass
+		if *ob.StorageClass=="GLACIER" {
+			svc:=s3cli.NewSvc()
+			hb,err:=svc.Stat(svc.BucketName(),e.FullPath)
+			if err==nil{
+				if  hb.Restore==nil{
+					e.Restore="未恢复"
+				}else{
+					if strings.Index(*hb.Restore, `ongoing-request="false"`)<0{
+						e.Restore="恢复中"
+					}else{
+						e.Restore="已恢复"
+					}
+				}
+			}
+		}
+	}
+	// 取类型的元素
+	//typeOfCat = typeOfCat.Elem()
+
+	// 显示反射类型对象的名称和种类
+	//logs.Infof("element name: '%v', element kind: '%v'\n", typeOfCat.Name(),typeOfCat.Kind())
+	//field, b := reflect.TypeOf(sinfo).Elem().FieldByName(" StorageClass")
+	//beego.Debug(field,b)
 	if path.Ext(e.Name) == config.Config.LocalStore.Ignore {
 		err = errors.New("隐藏")
 	}

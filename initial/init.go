@@ -1,92 +1,74 @@
-// Copyright 2018 cloudy itcloudy@qq.com.  All rights reserved.
-// Use of this source code is governed by a MIT style
-// license that can be found in the LICENSE file.
 package initial
 
-// var (
-// 	// 初始化安装
-// 	Installed sql.NullBool
-// 	// 安装版本
-// 	installedSchemaVer float64
-// 	// 安装时间
-// 	installedTime time.Time
-// 	// 重现加载
-// 	// reload bool
-// )
+import (
+	"github.com/qiaogw/pkg/redis"
+	"github.com/qiaogw/pkg/store"
+	"os"
+	"os/signal"
+	"syscall"
 
-// func SetInstalled(lockFile string) error {
-// 	now := time.Now()
-// 	err := ioutil.WriteFile(lockFile, []byte(now.Format(`2006-01-02 15:04:05`)+"\n"+fmt.Sprint(conf.Config.DBUpdateToVersion)), os.ModePerm)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	installedTime = now
-// 	installedSchemaVer = conf.Config.DBUpdateToVersion
-// 	Installed.Valid = true
-// 	Installed.Bool = true
-// 	return nil
-// }
-// func LoadInitData() {
-// 	if conf.Config.Init.Enable {
-// 		// cfg := conf.Config.DB
-// 		conf.GetDBConnection("")
-// 		logs.Logger.Info("start load init data")
-// 		if conf.Config.Init.API != "" {
-// 			logs.Logger.Info("start load init api data")
-// 			// initApi()
-// 			logs.Logger.Info("load init api data success")
+	"github.com/qiaogw/pkg/logs"
+	_ "github.com/qiaogw/pkg/store/driver/fuse"
+	_ "github.com/qiaogw/pkg/store/driver/s3"
+	_ "github.com/qiaogw/pkg/store/driver/seaweed"
 
-// 		}
-// 	} else {
-// 		logs.Logger.Error("start load init data failed,config file init enable is false")
-// 		os.Exit(-1)
-// 	}
+	"github.com/qiaogw/pkg/cache"
+	"github.com/qiaogw/pkg/config"
+	"github.com/qiaogw/pkg/dbtools"
+	"github.com/qiaogw/pkg/jwt"
+	//"github.com/qiaogw/pkg/store"
+)
 
-// }
+func init() {
+	config.LoadConfig()
+	if dbtools.IsInstalled(){
+		if err:=dbtools.DBConnect(config.Config.DB);err!=nil{
+			logs.Fatalf("jwt init err is %v",err)
+		}
+	}
+	redis.Init(config.Config.Redis)
+	cache.InitCache()
+	err:=jwt.InitJwt(config.Config.JwtPublicPath,config.Config.JwtPrivatePath)
+	if err!=nil{
+		logs.Fatalf("jwt init err is %v",err)
+	}
+	caddyConfig := config.Config.Caddy
+	caddyConfig.Init(config.Config.AppName)
+	go caddyConfig.Start()
+	store.Init()
+	// 捕捉信号,配置热更新等
+	go catchSignal()
+	// initTask()
+}
 
-// func isInstalled() bool {
-// 	dir, _ := os.Getwd()
-// 	if !Installed.Valid {
-// 		lockFile := filepath.Join(dir, `installed.lock`)
-// 		if info, err := os.Stat(lockFile); err == nil && !info.IsDir() {
-// 			if b, e := ioutil.ReadFile(lockFile); e == nil {
-// 				content := string(b)
-// 				content = strings.TrimSpace(content)
-// 				lines := strings.Split(content, "\n")
-// 				switch len(lines) {
-// 				case 2:
-// 					installedSchemaVer, _ = strconv.ParseFloat(strings.TrimSpace(lines[1]), 64)
-// 					fallthrough
-// 				case 1:
-// 					installedTime, _ = time.Parse(`2006-01-02 15:04:05`, strings.TrimSpace(lines[0]))
-// 				}
-// 			}
-// 			Installed.Valid = true
-// 			Installed.Bool = true
-// 		}
-// 	}
+// 捕捉信号
+func catchSignal() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
+	for {
+		s := <-c
+		logs.Info("收到信号 -- ", s)
+		switch s {
+		case syscall.SIGHUP:
+			logs.Info("收到终端断开信号, 忽略")
+		case syscall.SIGINT, syscall.SIGTERM:
+			shutdown()
+		}
+	}
+}
 
-// 	if Installed.Bool && conf.Config.DBUpdateToVersion > installedSchemaVer {
-// 		var upgraded bool
-// 		// err := createdb()
-// 		// if err == nil {
-// 		// 	upgraded = true
-// 		// } else {
-// 		// 	logs.Panic(`数据库表结构需要升级！`)
-// 		// }
-// 		if upgraded {
-// 			installedSchemaVer = conf.Config.DBUpdateToVersion
-// 			ioutil.WriteFile(filepath.Join(dir, `installed.lock`), []byte(installedTime.Format(`2006-01-02 15:04:05`)+"\n"+fmt.Sprint(conf.Config.DBUpdateToVersion)), os.ModePerm)
-// 		}
-// 	}
-// 	return Installed.Bool
-// }
+// 应用退出
+func shutdown() {
+	defer func() {
+		logs.Info("已退出")
+		os.Exit(0)
+	}()
 
-// func dbSetup() {
-// 	// conf.GetDBConnection("init")
-// 	if !isInstalled() {
-// 		createdb()
-// 	}
-// 	conf.SqlxDB.Close()
-// 	// conf.SqlxDB.Close()
-// }
+	if !dbtools.IsInstalled() {
+		return
+	}
+	logs.Info("应用准备退出")
+	// 停止所有任务调度
+	logs.Info("停止定时任务调度")
+	// service.ServiceTask.WaitAndExit()
+}

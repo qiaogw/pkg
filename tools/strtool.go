@@ -3,8 +3,9 @@ package tools
 import (
 	"bytes"
 	"crypto/rand"
-	uuid "github.com/satori/go.uuid"
 	"math/big"
+
+	uuid "github.com/satori/go.uuid"
 
 	"strconv"
 	"strings"
@@ -150,12 +151,12 @@ func SliToStr(sl string, params ...interface{}) (str string) {
 }
 
 //SetTree 递归获取树，根据资源父id，tree指针返回
-func SetTree(access []map[string]interface{}, pid int, pTree *map[string]interface{}) {
+func SetTree(access []map[string]interface{}, pid string, pTree *map[string]interface{}) {
 	i := -1
 	var dTree map[string]interface{}
 	for k, v := range access {
 		dTree = v
-		aPid := TypeInt(v["Pid"])
+		aPid := v["Pid"].(string)
 		if aPid == pid && i < k {
 			i++
 			if (*pTree)["children"] == nil {
@@ -164,14 +165,14 @@ func SetTree(access []map[string]interface{}, pid int, pTree *map[string]interfa
 			}
 			(*pTree)["children"] = append((*pTree)["children"].([]map[string]interface{}), dTree)
 			sl := (*pTree)["children"].([]map[string]interface{})
-			aId := TypeInt(v["Id"])
+			aId := v["Id"].(string)
 			SetTree(access, aId, &sl[i])
 		}
 	}
 }
 
 //GetTree 递归获取树，根据资源父id，tree指针返回
-func GetTree(access []map[string]interface{}, pid int) map[string]interface{} {
+func GetTree(access []map[string]interface{}, pid string) map[string]interface{} {
 	dTree := make(map[string]interface{})
 	SetTree(access, pid, &dTree)
 	return dTree
@@ -237,6 +238,13 @@ func ArrayToStr(arr []interface{}) string {
 		if i < len(arr)-1 {
 			result += ","
 		}
+	}
+	return result
+}
+func ArrayToString(arr []string) string {
+	var result string
+	for _, i := range arr { //遍历数组中所有元素追加成string
+		result = result + i + "/"
 	}
 	return result
 }

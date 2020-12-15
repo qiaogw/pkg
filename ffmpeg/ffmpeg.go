@@ -3,18 +3,16 @@ package ffmpeg
 
 import (
 	"github.com/astaxie/beego"
+	"github.com/qiaogw/pkg/tools"
+
 	//	"bufio"
 
 	"os"
 	"os/exec"
 	"path/filepath"
 
-	// "io"
-	// "io/ioutil"
 	"strconv"
 	"strings"
-
-	"github.com/qiaogw/pkg/pathtool"
 )
 
 var duration = 0
@@ -146,7 +144,7 @@ func FfmpegJoin(filename string) (outfile string, err error) {
 	beego.Debug(filename, filedir)
 	outfile = filedir + "outfile.flv"
 
-	if pathtool.CheckFileIsExist(outfile) { //如果文件存在
+	if tools.CheckFileIsExist(outfile) { //如果文件存在
 		os.Remove(outfile) //创建文件
 	}
 	if err != nil {

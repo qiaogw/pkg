@@ -10,7 +10,6 @@ import (
 	"os"
 
 	"github.com/qiaogw/pkg/config"
-	"github.com/qiaogw/pkg/consts"
 	"github.com/qiaogw/pkg/logs"
 
 	"time"
@@ -31,7 +30,7 @@ func KillOld() {
 		var pidMap map[string]string
 		err = json.Unmarshal(dat, &pidMap)
 		if err != nil {
-			logs.Error("un marshalling pid map", zap.String("type", consts.JSONUnmarshallError), zap.ByteString("data", dat), zap.Error(err))
+			logs.Error("un marshalling pid map", zap.String("type", "JSONUnmarshall"), zap.ByteString("data", dat), zap.Error(err))
 
 		}
 		logs.Debug("old pid path", zap.String("path", pidPath))

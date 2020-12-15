@@ -4,26 +4,22 @@
 package config
 
 import (
-	//"encoding/json"
 	"fmt"
-
-	"github.com/qiaogw/pkg/tools"
-	"gopkg.in/ini.v1"
-
-	//"github.com/astaxie/beego"
-	"github.com/qiaogw/pkg/consts"
-	//"github.com/qiaogw/pkg/caddy"
-	//"github.com/qiaogw/pkg/hugo"
-	"github.com/qiaogw/pkg/logs"
-
+	"github.com/qiaogw/pkg/redis"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/qiaogw/pkg/caddy"
+	"github.com/qiaogw/pkg/consts"
+	"github.com/qiaogw/pkg/hugo"
+	"github.com/qiaogw/pkg/logs"
+	"github.com/qiaogw/pkg/tools"
+
+	//"context"
 	"github.com/pelletier/go-toml"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 )
 
 // HostPort endpoint in form "str:int"
@@ -75,7 +71,7 @@ func (c CentrifugoConfig) String() string {
 type LogConfig struct {
 	EnableKafka  bool     `label:"启用kafaka"`
 	KafkaAddress []string `label:"kafaka地址"`
-	FilePath     string   `label:"文件地址"`       // file name
+	FilePath     string   `label:"文件名称"`       // file name
 	MaxSize      int      `label:"日志文件最大尺寸"`   // file size
 	MaxBackups   int      `label:"日志文件最大保存"`   // file back
 	MaxAge       int      `label:"日志文件最大保存天数"` // file save days
@@ -97,17 +93,6 @@ type TlsConfig struct {
 	Enable   bool   `label:"是否启用"`
 	CertFile string `label:"CertFile"`
 	KeyFile  string `label:"KeyFile"`
-}
-type RedisConfig struct {
-	Enable      bool          `label:"是否启用"`
-	Key         string        `label:"Redis collection 的名称"`
-	Addr        string        `label:"地址"`
-	Password    string        `label:"密码"`
-	DBNum       int           `label:"数据库"`
-	MaxActive   int           `label:"最大连接数"`
-	MaxIdle     int           `label:"最大空闲连接数"`
-	IdleTimeout time.Duration `label:"空闲连接超时时间"`
-	Wait        bool          `label:"如果超过最大连接，是报错，还是等待。"`
 }
 
 type SuperUser struct {
@@ -156,16 +141,17 @@ type Seaweed struct {
 	Public      string `label:"Filer只读地址"`
 	Private     string `label:"Filer管理地址"`
 }
+
 type S3 struct {
-	Endpoint          string `label:"地址"`              // 地址
-	AccessKeyID       string `label:"AccessKeyID"`     // 地址
-	SecretAccessKey   string `label:"SecretAccessKey"` // 地址
-	Region            string `label:"对象存储的region"`     // 对象存储的region
-	Bucket            string `label:"对象存储的Bucket"`     // 对象存储的Bucket
-	Secure            bool   `label:"true代表使用HTTPS"`   // true代表使用HTTPS
-	Ignore            string `label:"隐藏文件，S3不支持空目录"`   // 地址
-	LifeDay           int64  `label:"存储周期，天"`          // 地址
-	DefautRestorePath string `label:"默认恢复文件前缀"`
+	Endpoint        string `label:"地址"`              // 地址
+	AccessKeyID     string `label:"AccessKeyID"`     // 地址
+	SecretAccessKey string `label:"SecretAccessKey"` // 地址
+	Region          string `label:"对象存储的region"`     // 对象存储的region
+	Bucket          string `label:"对象存储的Bucket"`     // 对象存储的Bucket
+	Secure          bool   `label:"true代表使用HTTPS"`   // true代表使用HTTPS
+	Ignore          string `label:"隐藏文件，S3不支持空目录"`   // 地址
+	LifeDay         int64  `label:"存储周期，天"`          // 地址
+	TaskTime        string `label:"任务开始时间"`
 }
 
 type LocalStore struct {
@@ -178,108 +164,77 @@ type LocalStore struct {
 	Temp        string `label:"临时目录"`          // 地址
 }
 type GlobalConfig struct {
-	AppName           string  `label:"应用名称"`
-	DBUpdateToVersion float64 `label:"数据库版本"` // 数据库升级到某个版本
-	RunMode           string  `label:"运行模式"`  // 运行模式
-	//TokenExpire       int64                   `label:"token有效时间 秒"`      // token有效时间
-	ConfigPath string `label:"配置文件地址"` // 配置文件地址
-	//JwtPrivatePath    string                  `label:"jwt private path"` // jwt private path
-	//JwtPublicPath     string                  `label:"jwt public path"`  // jwt public path
-	//JwtFlash          bool                    `label:"jwt 是否自动刷新"`
-	TempDir       string `label:"临时文件"`   // 临时文件
-	SystemDataDir string `label:"系统文件地址"` // 系统文件地址，系统自带文件
-	UserDataDir   string `label:"用户文件地址"` // 用户文件地址，用户上传文件存储位置
-	PidFilePath   string `label:"进程"`     // 进程
-	LockFilePath  string // 进程锁 file path
-	Store         string // 存储配置
-	//TLS               TlsConfig               // tls
-	//Redis             RedisConfig             // redis
-	//HTTP              HostPort                // http端口
-	//RPC               RpcPort                 // rpc端口
-	//DB                DBConfig                // 数据库配置
-	//Centrifugo        CentrifugoConfig        // Centrifugo消息推送
-	Log LogConfig // 日志
-	//EmailNotification EmailNotificationConfig // 邮件配置
-	//Cors              CorsConfig              // 跨域配置
-	//Admin             SuperUser               // 超级用户
-	//Init              InitConfig              // 初始化数据
-	//FileUpload        FileUploadConfig        // 文件上传、
-	//Elastic           ElasticConfig           // elastic配置
-	//Auth              Auth                    // 认证配置
-	//Cache             Cache                   // Cache配置
-	//Seaweed           Seaweed                 // Seaweed配置
-	//Caddy             caddy.Config            // caddy 配置
-	//Hugo              hugo.Config             // hugo 配置
-	S3         S3         // S3 配置
-	LocalStore LocalStore // LocalStore 配置
+	AppName           string                  `label:"应用名称"`
+	DBUpdateToVersion float64                 `label:"数据库版本"`            // 数据库升级到某个版本
+	RunMode           string                  `label:"运行模式"`             // 运行模式
+	TokenExpire       int64                   `label:"token有效时间 秒"`      // token有效时间
+	ConfigPath        string                  `label:"配置文件地址"`           // 配置文件地址
+	JwtPrivatePath    string                  `label:"jwt private path"` // jwt private path
+	JwtPublicPath     string                  `label:"jwt public path"`  // jwt public path
+	JwtFlash          bool                    `label:"jwt 是否自动刷新"`
+	TempDir           string                  `label:"临时文件"`   // 临时文件
+	SystemDataDir     string                  `label:"系统文件地址"` // 系统文件地址，系统自带文件
+	UserDataDir       string                  `label:"用户文件地址"` // 用户文件地址，用户上传文件存储位置
+	PidFilePath       string                  `label:"进程"`     // 进程
+	LockFilePath      string                  // 进程锁 file path
+	Store             string                  // 存储配置
+	TLS               TlsConfig               // tls
+	Redis             redis.RedisConfig             // redis
+	HTTP              HostPort                // http端口
+	RPC               RpcPort                 // rpc端口
+	DB                DBConfig                // 数据库配置
+	Centrifugo        CentrifugoConfig        // Centrifugo消息推送
+	Log               LogConfig               // 日志
+	EmailNotification EmailNotificationConfig // 邮件配置
+	Cors              CorsConfig              // 跨域配置
+	Admin             SuperUser               // 超级用户
+	Init              InitConfig              // 初始化数据
+	FileUpload        FileUploadConfig        // 文件上传、
+	Elastic           ElasticConfig           // elastic配置
+	Auth              Auth                    // 认证配置
+	Cache             Cache                   // Cache配置
+	Seaweed           Seaweed                 // Seaweed配置
+	Caddy             caddy.Config            // caddy 配置
+	Hugo              hugo.Config             // hugo 配置
+	S3                S3                      // S3 配置
+	LocalStore        LocalStore              // LocalStore 配置
 }
 
 // GetPidPath returns path to pid file
 func (c *GlobalConfig) GetPidPath() string {
 	return c.PidFilePath
 }
-func DefaultConfigPath() string {
+func defaultConfigPath() string {
 	p, err := os.Getwd()
 	if err != nil {
 		logs.Fatal("getting current wd")
 	}
-	//return filepath.Join(p, "conf", "config.toml")
 	return filepath.Join(p, consts.DefaultConfigDirName, "app.toml")
 }
 
 // LoadConfig from configFile
 // the function has side effect updating global var Config
-func LoadConfig(path string) error {
-	//log.WithFields(log.Fields{"path": path}).Info("Loading config")
-	err := LoadConfigToVar(path, &Config)
-	if err != nil {
-		return err
-	}
-	tools.CheckPath(Config.LocalStore.ConfigFile)
-	_, err = os.Create(Config.LocalStore.ConfigFile)
-	if err != nil {
-		fmt.Printf("os.Create failed: %+v\n", err)
-		return err
-	}
-	cfg, err := ini.Load(Config.LocalStore.ConfigFile)
-	if err != nil {
-		fmt.Printf("ini.Load config failed: %+v\n", err)
-		return err
-	}
-	cfg.Section("s3").Key("type").SetValue("s3")
-	cfg.Section("s3").Key("provider").SetValue("Other")
-	cfg.Section("s3").Key("env_auth").SetValue("false")
-	cfg.Section("s3").Key("access_key_id").SetValue(Config.S3.AccessKeyID)
-	cfg.Section("s3").Key("secret_access_key").SetValue(Config.S3.SecretAccessKey)
-	cfg.Section("s3").Key("endpoint").SetValue("http://" + Config.S3.Endpoint)
-	cfg.Section("s3").Key("acl").SetValue("private")
-	err = cfg.SaveTo(Config.LocalStore.ConfigFile)
-	if err != nil {
-		fmt.Printf("Saving S3 config failed: %+v\n", err)
-		return err
-	}
-	return nil
-}
-func LoadConfigToVar(path string, v *GlobalConfig) error {
-	_, err := os.Stat(path)
+// func LoadConfig(path string) error {
+// 	return LoadConfigToVar(defaultConfigPath())
+// }
+func LoadConfig() (err error) {
+	configfile := defaultConfigPath()
+	_, err = os.Stat(configfile)
 	if os.IsNotExist(err) {
-		InitConfigFile()
-		return errors.Errorf("Unable to load config file %s", path)
+		err = InitConfigFile()
+		if err != nil {
+			return errors.Errorf("Unable to load config file %s,err is %v", configfile, err)
+		}
 	}
-	viper.SetConfigFile(path)
+	viper.SetConfigFile(configfile)
 	err = viper.ReadInConfig()
 	if err != nil {
 		return errors.Wrapf(err, "reading config")
 	}
-	err = viper.Unmarshal(v)
+	err = viper.Unmarshal(&Config)
 	if err != nil {
 		return errors.Wrapf(err, "marshalling config to global struct variable")
 	}
-
-	//log.Error(path)
-	//v.RunMode = beego.BConfig.RunMode
-	//v.AppName = beego.BConfig.AppName
-
 	logConf := Config.Log
 	logFile := filepath.Join(logConf.FilePath, consts.DefaultLogFileName)
 	if _, err := os.Stat(logConf.FilePath); os.IsNotExist(err) {
@@ -303,80 +258,56 @@ func LoadConfigToVar(path string, v *GlobalConfig) error {
 		logConf.Compress,
 		logConf.EnableKafka,
 		logConf.KafkaAddress)
+	// v.RunMode = beego.BConfig.RunMode
+	// redis, _ := json.Marshal(viper.Get("Redis"))
+	// db, _ := json.Marshal(viper.Get("DB"))
+	// seaweed, _ := json.Marshal(viper.Get("Seaweed"))
+	// if v.RunMode == "dev" {
+	// 	redis, _ := json.Marshal(viper.Get("RedisDev"))
+	// 	db, _ := json.Marshal(viper.Get("DBDev"))
+	// 	seaweed, _ := json.Marshal(viper.Get("SeaweedDev"))
 
-	//logDir := Config.Log.FilePath
-	//if _, err := os.Stat(logDir); os.IsNotExist(err) {
-	//	err := os.Mkdir(logDir, os.ModePerm)
-	//	if err != nil {
-	//		return errors.Wrapf(err, "creating dir %s", logDir)
-	//	}
-	//}
-	//logConfFile := filepath.Join(Config.ConfigPath, "log.json")
-	//if _, err := os.Stat(logConfFile); err == nil {
-	//	c := logConfig.New()
-	//	c.Load("app.json")
-	//	// 注册供 Logger.Targets 使用的日志标的类型
-	//	c.Register("ConsoleTarget", log.NewConsoleTarget)
-	//	c.Register("FileTarget", log.NewFileTarget)
-	//}
-
-	//fileTarget := log.NewFileTarget()
-	//fileTarget.FileName = filepath.Join(logDir, Config.AppName+`_{date:20060102}.log`) //按天分割日志
-	//fileTarget.MaxBytes = 10 * 1024 * 1024
-	////fileTarget.MaxLevel = log.LevelInfo
-	//log.SetTarget(fileTarget)
-	////t1 := log.NewConsoleTarget()
-	////log.DefaultLog.Logger.Targets = append(log.DefaultLog.Logger.Targets, fileTarget, t1)
-	//log.DefaultLog.Logger = log.GetLogger(Config.AppName, func(l *log.Logger, e *log.Entry) string {
-	//	return fmt.Sprintf("%v [%v] [%v] %v %v", e.Time.Format(time.RFC3339), e.Level, e.Category, e.Message, e.CallStack)
-	//})
-	//log.DefaultLog.Logger.CallDepth = 5
-	//redis, _ := json.Marshal(viper.Get("RedisProd"))
-	//db, _ := json.Marshal(viper.Get("DBProd"))
-	//seaweed, _ := json.Marshal(viper.Get("SeaweedProd"))
-	//if v.RunMode == "dev" {
-	//	redis, _ = json.Marshal(viper.Get("RedisDev"))
-	//	db, _ = json.Marshal(viper.Get("DBDev"))
-	//	seaweed, _ = json.Marshal(viper.Get("SeaweedDev"))
-	//}
-	//prd := new(RedisConfig)
-	//pdb := new(DBConfig)
-	//psw := new(Seaweed)
-	//err = json.Unmarshal(redis, prd)
-	//if err != nil {
-	//	return errors.Wrapf(err, "marshalling config to global struct variable")
-	//}
-	//v.Redis = *prd
-	//err = json.Unmarshal(db, pdb)
-	//if err != nil {
-	//	return errors.Wrapf(err, "marshalling config to global struct variable")
-	//}
-	//v.DB = *pdb
-	//err = json.Unmarshal(seaweed, psw)
-	//if err != nil {
-	//	return errors.Wrapf(err, "marshalling config to global struct variable")
-	//}
-	//v.Seaweed = *psw
+	// 	prd := new(RedisConfig)
+	// 	pdb := new(DBConfig)
+	// 	psw := new(Seaweed)
+	// 	err = json.Unmarshal(redis, prd)
+	// 	if err != nil {
+	// 		return errors.Wrapf(err, "marshalling config to global struct variable")
+	// 	}
+	// 	v.Redis = *prd
+	// 	err = json.Unmarshal(db, pdb)
+	// 	if err != nil {
+	// 		return errors.Wrapf(err, "marshalling config to global struct variable")
+	// 	}
+	// 	v.DB = *pdb
+	// 	err = json.Unmarshal(seaweed, psw)
+	// 	if err != nil {
+	// 		return errors.Wrapf(err, "marshalling config to global struct variable")
+	// 	}
+	// 	v.Seaweed = *psw
+	// }
 	return nil
 }
 
-func InitConfigFile() error {
-	err := FillRuntimePaths()
+func InitConfigFile() (err error) {
+	err = FillRuntimePaths()
 	if err != nil {
-		fmt.Printf("Filling config: %+v\n", err)
-		logs.Fatalf("Filling config", zap.Error(err))
+		logs.Fatalf("Filling config err is %v", err)
+		return
 	}
 	configPath := filepath.Join("conf", consts.DefaultConfigFile)
 	err = viper.Unmarshal(&Config)
 	if err != nil {
-		logs.Errorf("Marshalling config to global struct variable: %+v\n", err)
+		logs.Fatalf("Marshalling config to global struct variable: %v", err)
+		return
 	}
 	err = SaveConfig(configPath)
 	if err != nil {
-		fmt.Printf("Saving config failed: %+v\n", err)
+		logs.Fatalf("Saving config failed: %v", err)
+		return
 	}
 	fmt.Println("config file is saved success and path is " + configPath)
-	return err
+	return
 }
 
 // GetConfigFromPath read config from path and returns GlobalConfig struct
@@ -407,7 +338,7 @@ func GetConfigFromPath(path string) (interface{}, error) {
 func SaveConfig(path string) error {
 	dir := filepath.Dir(path)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err := os.Mkdir(dir, os.ModePerm)
+		err := os.Mkdir(dir, 0775)
 		if err != nil {
 			return errors.Wrapf(err, "creating dir %s", dir)
 		}
@@ -427,35 +358,24 @@ func SaveConfig(path string) error {
 	return nil
 }
 
-// SaveConfig save global parameters to configFile
-func SaveConfigToml(path string, evt interface{}) error {
-	dir := filepath.Dir(path)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err := os.Mkdir(dir, os.ModePerm)
-		if err != nil {
-			return errors.Wrapf(err, "creating dir %s", dir)
-		}
-	}
-
-	cf, err := os.Create(path)
-	if err != nil {
-		//log.WithFields(log.Fields{"type": consts.IOError, "error": err}).Error("Create config file failed")
-		return err
-	}
-	defer cf.Close()
-
-	err = toml.NewEncoder(cf).Encode(evt)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // FillRuntimePaths fills paths from runtime parameters
 func FillRuntimePaths() error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return errors.Wrapf(err, "getting current wd")
+	}
+	if Config.AppName == "" {
+		Config.AppName = consts.DefaultAppName
+	}
+	if Config.RunMode == "" {
+		Config.RunMode = "prod"
+	}
+
+	if Config.TokenExpire < 1 {
+		Config.TokenExpire = 3600
+	}
+	if Config.ConfigPath == "" {
+		Config.ConfigPath = filepath.Join(cwd, consts.DefaultConfigDirName, "app.toml")
 	}
 	if Config.SystemDataDir == "" {
 		Config.SystemDataDir = filepath.Join(cwd, consts.DefaultSystemDataDirName)
@@ -474,49 +394,109 @@ func FillRuntimePaths() error {
 	if Config.LockFilePath == "" {
 		Config.LockFilePath = filepath.Join(Config.SystemDataDir, consts.DefaultLockFilename)
 	}
-	//beego.Debug("Config.Log.FileName", Config.Log.FileName)
 	if Config.Log.FilePath == "" {
 		Config.Log.FilePath = filepath.Join(cwd, "logs")
+
 	}
-	//if Config.JwtPrivatePath == "" {
-	//	Config.JwtPrivatePath = filepath.Join(cwd, "conf", "jwt", "tm.rsa")
-	//}
-	//if Config.JwtPublicPath == "" {
-	//	Config.JwtPublicPath = filepath.Join(cwd, "conf", "jwt", "tm.rsa.pub")
-	//}
-	////https
-	//if Config.TLS.CertFile == "" {
-	//	Config.TLS.CertFile = filepath.Join(cwd, "conf", "https", "cert.pem")
-	//}
-	//if Config.TLS.KeyFile == "" {
-	//	Config.TLS.KeyFile = filepath.Join(cwd, "conf", "https", "key.pem")
-	//}
-	//
-	//if Config.Init.API == "" {
-	//	Config.Init.API = filepath.Join(cwd, "init", "api_data.yml")
-	//
-	//}
-	//
-	//if Config.DB.DbPath == "" {
-	//	Config.DB.DbPath = filepath.Join(cwd, consts.DefaultDbPath)
-	//}
-	//if Config.DB.BackupPath == "" {
-	//	Config.DB.BackupPath = filepath.Join(cwd, consts.DefaultDbPath)
-	//}
-	//if Config.Caddy.Caddyfile == "" {
-	//	Config.Caddy.Caddyfile = filepath.Join(cwd, consts.DefaultConfigDirName, consts.DefaultCaddyfile)
-	//}
-	//if Config.Caddy.LogFile == "" {
-	//	Config.Caddy.LogFile = filepath.Join(cwd, consts.DefaultLogDirName, consts.DefaultCaddyLogFileName)
-	//}
-	//if Config.Hugo.Dir == "" {
-	//	Config.Hugo.Dir = filepath.Join(cwd, consts.DefaultWebPath)
-	//}
-	if Config.AppName == "" {
-		Config.AppName = consts.DefaultAppName
+	Config.Cache.CacheType = "memory"
+	Config.Cache.CacheExpire = 60
+	//jwt
+	if Config.JwtPrivatePath == "" {
+		Config.JwtPrivatePath = filepath.Join(cwd, "config", "jwt", "tm.rsa")
 	}
-	if Config.RunMode == "" {
-		Config.RunMode = "prod"
+	if Config.JwtPublicPath == "" {
+		Config.JwtPublicPath = filepath.Join(cwd, "config", "jwt", "tm.rsa.pub")
+	}
+	//https
+	if Config.TLS.CertFile == "" {
+		Config.TLS.CertFile = filepath.Join(cwd, "config", "https", "cert.pem")
+	}
+	if Config.TLS.KeyFile == "" {
+		Config.TLS.KeyFile = filepath.Join(cwd, "config", "https", "key.pem")
+	}
+
+	if Config.Init.API == "" {
+		Config.Init.API = filepath.Join(cwd, "init", "api_data.yml")
+
+	}
+	if Config.Admin.UserName == "" {
+		Config.Admin.UserName = "admin"
+	}
+	if Config.Admin.Password == "" {
+		Config.Admin.Password = "12345678"
+	}
+
+	if Config.DB.DbPath == "" {
+		Config.DB.DbPath = filepath.Join(cwd, consts.DefaultDbPath)
+	}
+	if Config.DB.DbType == "" {
+		Config.DB.DbType = "mysql"
+	}
+	if Config.DB.Charset == "" {
+		Config.DB.Charset = "utf8"
+	}
+	if Config.DB.Host == "" {
+		Config.DB.Host = "dadmin_mysql"
+	}
+
+	if Config.DB.Port < 1 {
+		Config.DB.Port = 3306
+	}
+
+	if Config.DB.User == "" {
+		Config.DB.User = "dadmin_mysql"
+	}
+	if Config.DB.Password == "" {
+		Config.DB.Password = "dadmin_mysql_123"
+	}
+	if Config.DB.SslMode == "" {
+		Config.DB.SslMode = "disable"
+	}
+	if Config.DB.BackupPath == "" {
+		Config.DB.BackupPath = filepath.Join(cwd, consts.DefaultDbPath)
+	}
+	// [Redis]
+
+	Config.Redis.Key = "redis"
+	Config.Redis.Addr = "redis:6379"
+	Config.Redis.DBNum = 0
+	Config.Redis.Password = ""
+	Config.Redis.MaxIdle = 16
+	Config.Redis.MaxActive = 256
+	Config.Redis.IdleTimeout = 300
+	Config.Redis.Wait = true
+
+	// [Caddy]
+	Config.Caddy.Agreed = true
+	Config.Caddy.CAUrl = "https://acme-v02.api.letsencrypt.org/directory"
+	Config.Caddy.DisableHTTPChallenge = false
+	Config.Caddy.DisableTLSALPNChallenge = false
+
+	Config.Caddy.CPU = "100%"
+	Config.Caddy.CAEmail = ""
+	Config.Caddy.CATimeout = 30000000000
+
+	Config.Caddy.Quiet = false
+	Config.Caddy.Revoke = ""
+	Config.Caddy.ServerType = "http"
+	Config.Caddy.EnvFile = ""
+	Config.Caddy.Plugins = false
+	Config.Caddy.Version = false
+
+	if Config.Caddy.Caddyfile == "" {
+		Config.Caddy.Caddyfile = filepath.Join(cwd, consts.DefaultConfigDirName, consts.DefaultCaddyfile)
+	}
+	if Config.Caddy.LogFile == "" {
+		Config.Caddy.LogFile = filepath.Join(cwd, consts.DefaultLogDirName, consts.DefaultCaddyLogFileName)
+	}
+	if Config.Caddy.PidFile == "" {
+		Config.Caddy.PidFile = filepath.Join(cwd, consts.DefaultSystemDataDirName, consts.DefaultCaddyPidFileName)
+	}
+	if Config.Hugo.Dir == "" {
+		Config.Hugo.Dir = filepath.Join(cwd, consts.DefaultWebPath)
+	}
+	if Config.Log.FilePath == "" {
+		Config.Log.FilePath = filepath.Join(cwd, "logs")
 	}
 	if Config.Store == "" {
 		Config.Store = consts.DefaultStore
@@ -527,6 +507,8 @@ func FillRuntimePaths() error {
 	if Config.LocalStore.Dir == "" {
 		Config.LocalStore.Dir = filepath.Join(cwd, consts.DefaultStoreDir)
 	}
+	tools.CheckPath(filepath.Join(cwd, consts.DefaultStoreDir, "fd"))
+	tools.CheckPath(filepath.Join(cwd, consts.DefaultCacheDir, "fd"))
 	if Config.LocalStore.ConfigFile == "" {
 		Config.LocalStore.ConfigFile = filepath.Join(cwd, consts.DefaultStoreConfigFile)
 	}
@@ -546,9 +528,4 @@ func FillRuntimePaths() error {
 		Config.S3.Region = "us-east-1"
 	}
 	return nil
-}
-func MustOK(err error) {
-	if err != nil {
-		logs.Fatal(err.Error())
-	}
 }
