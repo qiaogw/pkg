@@ -9,7 +9,6 @@ import (
 	"github.com/kardianos/service"
 	"github.com/pkg/errors"
 	"github.com/qiaogw/com"
-	"github.com/qiaogw/pkg/config"
 	"github.com/qiaogw/log"
 )
 
@@ -17,6 +16,7 @@ type Options struct {
 	Name        string // Required name of the service. No spaces suggested.
 	DisplayName string // Display name, spaces allowed.
 	Description string // Long description of service.
+	LogFile     string // 服务日志.
 }
 
 // Config is the runner app config structure.
@@ -24,10 +24,11 @@ type Config struct {
 	service.Config
 	logger service.Logger
 
-	Dir  string
-	Exec string
-	Args []string
-	Env  []string
+	Dir         string
+	Exec        string
+	Args        []string
+	Env         []string
+	PidFilePath string
 
 	OnExited       func() error `json:"-"`
 	Stderr, Stdout io.Writer    `json:"-"`
@@ -51,7 +52,7 @@ func Run(options *Options, action string) error {
 		conf.Args = os.Args[3:]
 	}
 
-	logDir := config.Config.Log.FilePath
+	logDir := options.LogFile
 	if _, err := os.Stat(logDir); os.IsNotExist(err) {
 		err := os.Mkdir(logDir, os.ModePerm)
 		if err != nil {

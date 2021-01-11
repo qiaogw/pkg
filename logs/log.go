@@ -6,7 +6,6 @@ package logs
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -108,7 +107,7 @@ func InitLogger(mode string, fileName string, maxSize, maxBackups, maxAge int, c
 
 	// From a zapcore.Core, it's easy to construct a Logger.
 	Logger = zap.New(core, zap.AddCaller())
-	//defer Logger.Sync()
+
 	// initlog(fileName, maxSize, maxBackups, maxAge)
 	initlogs(mode, fileName, maxSize, maxBackups, maxAge, compress, enableKafka, kafkaAddress)
 }
@@ -140,22 +139,12 @@ func NewEncoderConfig() zapcore.EncoderConfig {
 func initlogs(mode string, fileName string, maxSize, maxBackups, maxAge int, compress bool, enableKafka bool, kafkaAddress []string) {
 
 	option := make([]LogOption, 0)
-	option = append(option, SetMaxFileSize(maxSize), SetCompress(compress), SetMaxAge(maxAge), SetMaxBackups(maxBackups))
+	option = append(option, SetMaxFileSize(maxSize), SetCompress(compress), SetMaxAge(maxAge), SetMaxBackups(maxBackups), SetCaller(true))
 	level := InfoLevel
 	if mode == "dev" {
 		level = DebugLevel
 		option = append(option, SetCaller(true))
 	}
-	// Path        string // 文件绝对地址，如：/home/homework/neso/file.log
-	// Level       string // 日志输出的级别
-	// MaxFileSize int    // 日志文件大小的最大值，单位(M)
-	// MaxBackups  int    // 最多保留备份数
-	// MaxAge      int    // 日志文件保存的时间，单位(天)
-	// Compress    bool   // 是否压缩
-	// Caller
-	//fmt.Println(mode, fileName, level, false, option)
-	dir := filepath.Dir(fileName)
-	fileName = filepath.Join(dir, "app.log")
+
 	Init(mode, fileName, level, false, option...)
-	//Init("prod", "/Users/qgw/proj/emanager/logs/emanager.log", "info", false)
 }

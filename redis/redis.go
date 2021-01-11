@@ -2,8 +2,9 @@ package redis
 
 import (
 	"encoding/json"
-	"github.com/gomodule/redigo/redis"
 	"time"
+
+	"github.com/gomodule/redigo/redis"
 )
 
 var (

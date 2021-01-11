@@ -10,7 +10,6 @@ import (
 
 	"github.com/kardianos/service"
 	"github.com/qiaogw/com"
-	"github.com/qiaogw/pkg/config"
 	"github.com/qiaogw/pkg/logs"
 )
 
@@ -47,7 +46,6 @@ func New(cfg *Config, action string) error {
 		//	p.logger.Errorf(" ValidServiceAction servic action  %s err is %v  ...", action, err)
 		//	return err
 		//}
-		logs.Debug(action)
 		err = service.Control(s, action)
 		if err != nil {
 			p.logger.Errorf("Valid action  %s err is %v  ", action, err)
@@ -62,9 +60,9 @@ func New(cfg *Config, action string) error {
 	return err
 }
 
-func getPidFiles() []string {
+func getPidFiles(pidFilePath string) []string {
 	var pidFile []string
-	pidFilePath := config.Config.GetPidPath()
+	// pidFilePath := config.Config.GetPidPath()
 	err := filepath.Walk(pidFilePath, func(pidPath string, info os.FileInfo, err error) error {
 		if err != nil || info.IsDir() {
 			return err
@@ -81,12 +79,13 @@ func getPidFiles() []string {
 }
 
 func NewProgram(cfg *Config) *program {
-	pidFile := config.Config.GetPidPath()
+	// pidFile := config.Config.GetPidPath()
+	pidFile := cfg.PidFilePath
 	err := os.MkdirAll(pidFile, os.ModePerm)
 	if err != nil {
 		logs.Error(err)
 	}
-	pidName := config.Config.AppName + ".pid"
+	pidName := cfg.Name + ".pid"
 	pidFile = filepath.Join(pidFile, pidName)
 	p := &program{
 		Config:  cfg,
@@ -138,8 +137,7 @@ func (p *program) createCmd() {
 		p.Args = append(p.Args, "start")
 	}
 	p.cmd = exec.Command(p.fullExec, p.Args...)
-	//bucket := "s3:" + config.Config.S3.Bucket
-	//p.cmd = s3cli.Gets3Cmd(bucket)
+
 	p.cmd.Dir = p.Dir
 	p.cmd.Env = append(os.Environ(), p.Env...)
 	if p.Stderr != nil {
@@ -172,7 +170,7 @@ func (p *program) killCmd() {
 	if err != nil {
 		p.logger.Error(p.pidFile+`:`, err)
 	}
-	for _, pidFile := range getPidFiles() {
+	for _, pidFile := range getPidFiles(p.PidFilePath) {
 		err = com.CloseProcessFromPidFile(pidFile)
 		if err != nil {
 			p.logger.Error(pidFile+`:`, err)

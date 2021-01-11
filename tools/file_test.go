@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	//"github.com/qiaogw/pkg/logs"
 	//"regexp"
 	"testing"
 )
@@ -42,7 +41,7 @@ func TestLockOrDie(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	lf, err := LockOrDie(dir)
+	lf := LockOrDie(dir)
 	err = os.Remove(file)
 	if err != nil {
 		t.Errorf("lock succes ,info  is %v", err)

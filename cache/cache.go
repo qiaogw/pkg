@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"time"
+
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/cache"
 	_ "github.com/astaxie/beego/cache/memcache"
@@ -12,16 +14,13 @@ import (
 	_ "github.com/astaxie/beego/cache/ssdb"
 	"github.com/astaxie/beego/orm"
 	"github.com/pkg/errors"
-	"github.com/qiaogw/pkg/config"
-	"time"
 )
 
 var cc cache.Cache
 
 // InitCache 初始化cache
-func InitCache() {
+func InitCache(cacheConfig, conn, password string) {
 	var err error
-	cacheConfig := config.Config.Cache.CacheType
 	cc = nil
 	if len(cacheConfig) < 4 {
 		cacheConfig = "memory"
@@ -31,7 +30,7 @@ func InitCache() {
 	case "ssdb":
 		err = initSsdb()
 	case "redis":
-		err = initRedis()
+		err = initRedis(conn, password)
 	case "memcache":
 		err = initMemcache()
 	case "file":
@@ -72,17 +71,15 @@ func initMemcache() (err error) {
 	return
 }
 
-func initRedis() (err error) {
+func initRedis(conn, password string) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			beego.Error("initcacheredis err is :", r)
 			cc = nil
 		}
 	}()
-	key := "cacheCollectionName" //config.Config.Redis.Key
-	conn := config.Config.Redis.Addr
-	dbNum := 0 //config.Config.Redis.DBNum
-	password := config.Config.Redis.Password
+	key := "cacheCollectionName" //
+	dbNum := 0                   //
 	confStr := fmt.Sprintf(`{"key":"%v","conn":"%v","dbNum":"%v","password":"%v"}`, key, conn, dbNum, password)
 	cc, err = cache.NewCache("redis", confStr)
 	if err != nil {
@@ -111,7 +108,7 @@ func initSsdb() (err error) {
 }
 
 // SetCache 插入cache
-func SetCache(key string, value interface{}, ts ...int64) error {
+func SetCache(key string, timeout int, value interface{}, ts ...int64) error {
 	data, err := Encode(value)
 	if err != nil {
 		return err
@@ -127,7 +124,6 @@ func SetCache(key string, value interface{}, ts ...int64) error {
 		}
 	}()
 
-	timeout := config.Config.Cache.CacheExpire
 	timeouts := time.Duration(timeout) * time.Second
 	if len(ts) > 0 {
 		timeouts = time.Duration(ts[0]) * time.Second
@@ -144,10 +140,10 @@ func SetCache(key string, value interface{}, ts ...int64) error {
 }
 
 //GetCache 获取cache
-func GetCache(key string, to interface{}) error {
+func GetCache(cacheConfig, key string, to interface{}) error {
 	if cc == nil {
-		// return errors.New("cc is nil")
-		InitCache()
+		return errors.New("cc is nil")
+		// InitCache(cacheConfig)
 	}
 	defer func() {
 		if r := recover(); r != nil {

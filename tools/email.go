@@ -1,7 +1,6 @@
 package tools
 
 import (
-	"github.com/astaxie/beego"
 	"net/smtp"
 	"strings"
 )
@@ -11,10 +10,7 @@ import (
  *  subject:The subject of mail
  *  body: The content of mail
  */
-func SendMail(to string, subject string, body string) error {
-	user := beego.AppConfig.String("mailfrom")
-	password := beego.AppConfig.String("mailpassword")
-	host := beego.AppConfig.String("mailhost")
+func SendMail(user, password, host, to string, subject string, body string) error {
 
 	hp := strings.Split(host, ":")
 	auth := smtp.PlainAuth("", user, password, hp[0])
