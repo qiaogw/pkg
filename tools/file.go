@@ -342,8 +342,8 @@ func GetParentDirectory(dirctory, prefix string) (string, string, bool) {
 }
 
 // ReadLine 读取指定行的内容
-func ReadLine(lineNumber int) string {
-	file, _ := os.Open("log.txt")
+func ReadLine(fileName string, lineNumber int) string {
+	file, _ := os.Open(fileName)
 	fileScanner := bufio.NewScanner(file)
 	lineCount := 1
 	for fileScanner.Scan() {
