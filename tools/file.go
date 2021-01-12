@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"bufio"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -35,7 +36,7 @@ func GetFileSuffix(s string) string {
 }
 
 // LockOrDie 加锁文件夹
-func LockOrDie(dir string) (*flock.Flock,error) {
+func LockOrDie(dir string) (*flock.Flock, error) {
 	f := flock.New(dir)
 	success, err := f.TryLock()
 	if err != nil {
@@ -44,7 +45,7 @@ func LockOrDie(dir string) (*flock.Flock,error) {
 	if !success {
 		return nil, err
 	}
-	return f,nil
+	return f, nil
 }
 
 // MakeDirectory 创建 directory if is not exists
@@ -338,4 +339,19 @@ func GetParentDirectory(dirctory, prefix string) (string, string, bool) {
 		return res, eres, true
 	}
 	return dirctory, "", false
+}
+
+// ReadLine 读取指定行的内容
+func ReadLine(lineNumber int) string {
+	file, _ := os.Open("log.txt")
+	fileScanner := bufio.NewScanner(file)
+	lineCount := 1
+	for fileScanner.Scan() {
+		if lineCount == lineNumber {
+			return fileScanner.Text()
+		}
+		lineCount++
+	}
+	defer file.Close()
+	return ""
 }
