@@ -1,17 +1,14 @@
-// Copyright 2018 cloudy itcloudy@qq.com.  All rights reserved.
-// Use of this source code is governed by a MIT style
-// license that can be found in the LICENSE file.
 package logs
 
 import (
 	"fmt"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var Logger *zap.Logger

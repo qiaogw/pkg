@@ -10,6 +10,4 @@
 *.out
 *.log
 /vendor
-dadmin
-logs/app.log
-logs/app.log
+

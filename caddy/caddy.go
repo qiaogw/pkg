@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -37,60 +38,6 @@ var (
 	EnableReload   = true
 )
 
-func TrapSignals() {
-	caddy.TrapSignals()
-}
-
-func (c *Config) fixed(appName string)(err error) {
-	if len(c.CAUrl) == 0 {
-		c.CAUrl = DefaultConfig.CAUrl
-	}
-	if c.CATimeout == 0 {
-		c.CATimeout = DefaultConfig.CATimeout
-	}
-	if len(c.ServerType) == 0 {
-		c.ServerType = DefaultConfig.ServerType
-	}
-	if len(c.CPU) == 0 {
-		c.CPU = DefaultConfig.CPU
-	}
-	//path, _ := os.Getwd()
-	//pidFile := filepath.Join(path, consts.DefaultSystemDataDirName)
-	//err := os.MkdirAll(pidFile, os.ModePerm)
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	//c.Caddyfile = filepath.Join(path, consts.DefaultConfigDirName, consts.DefaultCaddyfile)
-	//pidFile = filepath.Join(pidFile, `caddy.pid`)
-	//c.PidFile = pidFile
-	//if len(c.LogFile) == 0 {
-	//	logFile := filepath.Join(path, consts.DefaultLogDirName)
-	//	err := os.MkdirAll(logFile, os.ModePerm)
-	//	if err != nil {
-	//		log.Println(err)
-	//	}
-	//	c.LogFile = filepath.Join(logFile, consts.DefaultCaddyLogFileName)
-	//} else {
-	//	err := os.MkdirAll(filepath.Dir(c.LogFile), os.ModePerm)
-	//	if err != nil {
-	//		log.Println(err)
-	//	}
-	//}
-	err=tools.CheckPath(c.LogFile)
-	if err != nil {
-		return
-	}
-	tools.CheckPath(c.PidFile)
-	if err != nil {
-		return
-	}
-	c.appName = appName
-	c.appVersion = DefaultVersion
-	c.Agreed = true
-	c.ctx, c.cancel = context.WithCancel(context.Background())
-	return
-}
-
 type Config struct {
 	Agreed                  bool   `json:"agreed"` //Agree to the CA's Subscriber Agreement
 	CAUrl                   string `json:"caURL"`  //URL to certificate authority's ACME server directory
@@ -105,19 +52,48 @@ type Config struct {
 	Quiet                   bool   `json:"quiet"`      //Quiet mode (no initialization output)
 	Revoke                  string `json:"revoke"`     //Hostname for which to revoke the certificate
 	ServerType              string `json:"serverType"` //Type of server to run
+	EnvFile                 string `json:"envFile"`    //Path to file with environment variables to load in KEY=VALUE format
+	Plugins                 bool   `json:"plugins"`    //List installed plugins
+	Version                 bool   `json:"version"`    //Show version
+	appVersion              string
+	appName                 string
+	instance                *caddy.Instance
+	stopped                 bool
+	ctx                     context.Context
+	cancel                  context.CancelFunc
+}
 
-	//---
-	EnvFile string `json:"envFile"` //Path to file with environment variables to load in KEY=VALUE format
-	Plugins bool   `json:"plugins"` //List installed plugins
-	Version bool   `json:"version"` //Show version
+// TrapSignals TrapSignals
+func TrapSignals() {
+	caddy.TrapSignals()
+}
 
-	//---
-	appVersion string
-	appName    string
-	instance   *caddy.Instance
-	stopped    bool
-	ctx        context.Context
-	cancel     context.CancelFunc
+func (c *Config) fixed(appName string) (err error) {
+	if len(c.CAUrl) == 0 {
+		c.CAUrl = DefaultConfig.CAUrl
+	}
+	if c.CATimeout == 0 {
+		c.CATimeout = DefaultConfig.CATimeout
+	}
+	if len(c.ServerType) == 0 {
+		c.ServerType = DefaultConfig.ServerType
+	}
+	if len(c.CPU) == 0 {
+		c.CPU = DefaultConfig.CPU
+	}
+	err = tools.CheckPath(c.LogFile)
+	if err != nil {
+		return
+	}
+	tools.CheckPath(c.PidFile)
+	if err != nil {
+		return
+	}
+	c.appName = appName
+	c.appVersion = DefaultVersion
+	c.Agreed = true
+	c.ctx, c.cancel = context.WithCancel(context.Background())
+	return
 }
 
 func now() string {
@@ -222,8 +198,8 @@ func (c *Config) Status() bool {
 	return c.stopped
 }
 
-func (c *Config) Init(appName string) (err error){
-	err=c.fixed(appName)
+func (c *Config) Init(appName string) (err error) {
+	err = c.fixed(appName)
 	certmagic.DefaultACME.Agreed = c.Agreed
 	certmagic.DefaultACME.CA = c.CAUrl
 	certmagic.DefaultACME.DisableHTTPChallenge = c.DisableHTTPChallenge
@@ -234,7 +210,7 @@ func (c *Config) Init(appName string) (err error){
 	caddy.Quiet = c.Quiet
 	caddy.RegisterCaddyfileLoader("flag", caddy.LoaderFunc(c.confLoader))
 	caddy.SetDefaultCaddyfileLoader("default", caddy.LoaderFunc(c.defaultLoader))
-	log.SetFlags(log.Ldate|log.Lshortfile)
+	log.SetFlags(log.Ldate | log.Lshortfile)
 	// Set up process log before anything bad happens
 	switch c.LogFile {
 	case "stdout":
@@ -448,4 +424,29 @@ func ParseEnvFile(envInput io.Reader) (map[string]string, error) {
 	}
 
 	return envMap, nil
+}
+
+// func (c *SiteConfig) NewSite(hugoConfig *Config) (err error) {
+func GetCaddy() *Config {
+	return DefaultConfig
+}
+func (c *Config) NewSite(conf, title string) (err error) {
+	confPath := filepath.Dir(c.Caddyfile)
+	siteConfPath := filepath.Join(confPath, "caddy", title+".conf")
+	err = ioutil.WriteFile(siteConfPath, []byte(conf), os.ModePerm)
+	if err == nil {
+		err = c.Restart()
+	}
+	return
+}
+
+func (c *Config) RemoveSite(title string) error {
+	confPath := filepath.Dir(c.Caddyfile)
+	siteConfPath := filepath.Join(confPath, "caddy", title+".conf")
+	err := os.Remove(siteConfPath)
+	if os.IsNotExist(err) {
+		err = nil
+	}
+	err = c.Restart()
+	return err
 }

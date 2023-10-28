@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/qiaogw/pkg/config"
 	"github.com/qiaogw/pkg/logs"
 
 	"time"
@@ -21,7 +20,7 @@ import (
 )
 
 func KillOld() {
-	pidPath := config.Config.GetPidPath()
+	pidPath := "path"
 	if _, err := os.Stat(pidPath); err == nil {
 		dat, err := ioutil.ReadFile(pidPath)
 		if err != nil {
@@ -39,7 +38,7 @@ func KillOld() {
 		if fmt.Sprintf("%s", err) != "null" {
 			// give 15 sec to end the previous process
 			for i := 0; i < 15; i++ {
-				if _, err := os.Stat(config.Config.GetPidPath()); err == nil {
+				if _, err := os.Stat(pidPath); err == nil {
 					time.Sleep(time.Second)
 				} else {
 					break

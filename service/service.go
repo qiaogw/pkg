@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/kardianos/service"
-	"github.com/qiaogw/com"
 	"github.com/qiaogw/pkg/logs"
 )
 
@@ -162,20 +161,20 @@ func (p *program) Stop(s service.Service) error {
 }
 
 func (p *program) killCmd() {
-	err := com.CloseProcessFromCmd(p.cmd)
-	if err != nil {
-		p.logger.Error(err)
-	}
-	err = com.CloseProcessFromPidFile(p.pidFile)
-	if err != nil {
-		p.logger.Error(p.pidFile+`:`, err)
-	}
-	for _, pidFile := range getPidFiles(p.PidFilePath) {
-		err = com.CloseProcessFromPidFile(pidFile)
-		if err != nil {
-			p.logger.Error(pidFile+`:`, err)
-		}
-	}
+	//err := com.CloseProcessFromCmd(p.cmd)
+	//if err != nil {
+	//	p.logger.Error(err)
+	//}
+	//err = com.CloseProcessFromPidFile(p.pidFile)
+	//if err != nil {
+	//	p.logger.Error(p.pidFile+`:`, err)
+	//}
+	//for _, pidFile := range getPidFiles(p.PidFilePath) {
+	//	err = com.CloseProcessFromPidFile(pidFile)
+	//	if err != nil {
+	//		p.logger.Error(pidFile+`:`, err)
+	//	}
+	//}
 }
 
 func (p *program) close() {

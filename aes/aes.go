@@ -1,4 +1,3 @@
-//aes加密解密
 package aes
 
 import (
@@ -8,79 +7,53 @@ import (
 	"encoding/base64"
 )
 
-//AesEncrypt aes加密
-func AesEncrypt(plantText []byte, key []byte, iv []byte) (string, error) {
-
+// Encrypt 使用AES加密算法对输入数据进行加密
+func Encrypt(plainText []byte, key []byte, iv []byte) (string, error) {
 	block, err := aes.NewCipher(key)
-
-	//选择加密算法
-
 	if err != nil {
-
 		return "", err
-
 	}
 
-	plantText = PKCS7Padding(plantText, block.BlockSize())
+	// 对明文进行PKCS7填充
+	plainText = PKCS7Padding(plainText, block.BlockSize())
 
-	if len(plantText)%aes.BlockSize != 0 { //块大小在aes.BlockSize中定义
+	blockMode := cipher.NewCBCEncrypter(block, iv)
+	cipherText := make([]byte, len(plainText))
+	blockMode.CryptBlocks(cipherText, plainText)
 
-		panic("plantText is not a multiple of the block size")
-
-	}
-
-	blockModel := cipher.NewCBCEncrypter(block, iv)
-
-	ciphertext := make([]byte, len(plantText))
-
-	blockModel.CryptBlocks(ciphertext, plantText)
-
-	return base64.StdEncoding.EncodeToString(ciphertext), nil
-
+	// 返回Base64编码后的密文
+	return base64.StdEncoding.EncodeToString(cipherText), nil
 }
 
-func PKCS7Padding(ciphertext []byte, blockSize int) []byte {
-
-	padding := blockSize - len(ciphertext)%blockSize
-
-	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
-
-	return append(ciphertext, padtext...)
-
+// PKCS7Padding 对数据进行PKCS7填充
+func PKCS7Padding(data []byte, blockSize int) []byte {
+	padding := blockSize - len(data)%blockSize
+	padText := bytes.Repeat([]byte{byte(padding)}, padding)
+	return append(data, padText...)
 }
 
-//AesDecrypt aes解密
-func AesDecrypt(cs string, key []byte, iv []byte) ([]byte, error) {
-	ciphertext, _ := base64.StdEncoding.DecodeString(cs)
+// Decrypt 使用AES解密算法对输入数据进行解密
+func Decrypt(cipherText string, key []byte, iv []byte) ([]byte, error) {
+	cipherData, _ := base64.StdEncoding.DecodeString(cipherText)
 
 	block, err := aes.NewCipher(key)
-
-	//选择加密算法
-
 	if err != nil {
-
 		return nil, err
-
 	}
 
-	blockModel := cipher.NewCBCDecrypter(block, iv)
+	blockMode := cipher.NewCBCDecrypter(block, iv)
+	plainText := make([]byte, len(cipherData))
+	blockMode.CryptBlocks(plainText, cipherData)
 
-	plantText := make([]byte, len(ciphertext))
+	// 去除PKCS7填充
+	plainText = PKCS7UnPadding(plainText, block.BlockSize())
 
-	blockModel.CryptBlocks(plantText, ciphertext)
-
-	plantText = PKCS7UnPadding(plantText, block.BlockSize())
-
-	return plantText, nil
-
+	return plainText, nil
 }
 
-func PKCS7UnPadding(plantText []byte, blockSize int) []byte {
-
-	length := len(plantText)
-
-	unpadding := int(plantText[length-1])
-
-	return plantText[:(length - unpadding)]
-
+// PKCS7UnPadding 去除PKCS7填充
+func PKCS7UnPadding(data []byte, blockSize int) []byte {
+	length := len(data)
+	unpadding := int(data[length-1])
+	return data[:(length - unpadding)]
 }

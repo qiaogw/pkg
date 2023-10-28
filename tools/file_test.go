@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-//TestCheckPath 检查文件夹是否存在，不存在则创建
+// TestCheckPath 检查文件夹是否存在，不存在则创建
 func TestCheckPath(t *testing.T) {
 	dir := filepath.Dir("logPath")
 	err := CheckPath(dir)
@@ -41,7 +41,7 @@ func TestLockOrDie(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	lf := LockOrDie(dir)
+	lf, err := LockOrDie(dir)
 	err = os.Remove(file)
 	if err != nil {
 		t.Errorf("lock succes ,info  is %v", err)

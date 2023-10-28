@@ -5,27 +5,12 @@ import (
 	"time"
 
 	"github.com/jasonlvhit/gocron"
-	"github.com/qiaogw/pkg/config"
 	"github.com/qiaogw/pkg/logs"
-	"github.com/qiaogw/pkg/s3cli"
 )
 
-func init ()  {
+func init() {
 	location, _ := time.LoadLocation("Asia/Shanghai")
 	gocron.ChangeLoc(location)
-}
-//task 删除超期文件
-func task() {
-	svc := s3cli.NewSvc()
-	logs.Info("任务：删除开始执行。。。。")
-	svc.RemoveObjectsLife()
-	logs.Info("任务：删除执行完成")
-}
-
-//taskWithParams 恢复文件
-func taskWithParams(ppath string, days int64) {
-	svc := s3cli.NewSvc()
-	svc.RestoreObjectsLife(ppath, days)
 }
 
 func Run() {
@@ -40,7 +25,7 @@ func Run() {
 	//<-gocron.Start()
 	//ever := config.Config.S3.LifeDay
 	//在task执行过程中 禁止异常退出
-	gocron.Every(1).Day().At(config.Config.S3.TaskTime).DoSafely(task)
+	//gocron.Every(1).Day().At(config.Config.S3.TaskTime).DoSafely(task)
 	//gocron.Every(1).Day().Do(task)
 	//ppath := config.Config.S3.DefautRestorePath
 	//days := 7
@@ -65,14 +50,14 @@ func Run() {
 	<-gocron.Start()
 }
 
-func AddTask(name string,args ...string) {
+func AddTask(name string, args ...string) {
 	// 配置本地时间
 
-	gocron.Every(1).Day().At("03:30").DoSafely(runCmd, name , args)
+	gocron.Every(1).Day().At("03:30").DoSafely(runCmd, name, args)
 	<-gocron.Start()
 }
 
-func runCmd(name string,args ...string){
+func runCmd(name string, args ...string) {
 	command := exec.Command(name, args...)
 	if err := command.Start(); err != nil {
 		logs.Error("Failed to start cmd: ", err)

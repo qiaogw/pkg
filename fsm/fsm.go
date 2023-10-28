@@ -1,18 +1,17 @@
 // Package fsm
-// gofsm是一个简单的，功能强大的FSM实现，与其他FSM实现具有一些不同的功能。
-// gofsm的一个特点是它不会保留/保留对象的状态。 当它处理转换时，您必须将当前状态传递给id，
-//因此您可以将gofsm视为“无状态”状态机。 这个好处是一个gofsm实例可以用来处理很多对象实例的转换，而不是创建大量的FSM实例。
-//对象实例自身保持状态。
-//另一个特点是它为Moore和Mealy FSM提供了一个通用接口。 您可以为这两个FSM实现相应的方法（OnExit，Action，OnEnter）。
-//第三个有趣的特性是您可以将配置的转换导出到状态图。 一张图片胜过千言万语。
-// gofsm的样式执行https://github.com/elimisteve/fsm。
+// fsm 是一个简单的，功能强大的FSM实现，与其他FSM实现具有一些不同的功能。
+// fsm 的一个特点是它不会保留/保留对象的状态。 当它处理转换时，您必须将当前状态传递给id，
+// 因此您可以将 fsm 视为“无状态”状态机。 这个好处是一个 fsm 实例可以用来处理很多对象实例的转换，而不是创建大量的FSM实例。
+// 对象实例自身保持状态。
+// 另一个特点是它为Moore和Mealy FSM提供了一个通用接口。 您可以为这两个FSM实现相应的方法（OnExit，Action，OnEnter）。
+// 第三个有趣的特性是您可以将配置的转换导出到状态图。 一张图片胜过千言万语。
+// fsm 的样式执行
 package fsm
 
 import (
 	"fmt"
-	"runtime"
-	// "github.com/astaxie/beego"
 	"os/exec"
+	"runtime"
 	"strings"
 )
 
@@ -29,7 +28,7 @@ type Transition struct {
 }
 
 // Delegate 用于处理操作。 因为gofsm使用文字值作为事件，状态和动作，所以您需要使用相应的功能处理它们。
-//DefaultDelegate是将处理分为三个操作的默认委托实现：OnExit Action，Action和OnEnter Action。 您可以实现不同的代理。
+// DefaultDelegate是将处理分为三个操作的默认委托实现：OnExit Action，Action和OnEnter Action。 您可以实现不同的代理。
 type Delegate interface {
 	// HandleEvent handles transitions
 	HandleEvent(action string, fromState string, toState string, args []interface{})
@@ -122,7 +121,7 @@ func (m *StateMachine) ExportWithDetails(outfile string, format string, layout s
 	return system(cmd, dot)
 }
 
-//system 系统命令
+// system 系统命令
 func system(c string, dot string) error {
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {

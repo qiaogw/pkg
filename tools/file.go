@@ -13,12 +13,16 @@ import (
 	"github.com/theckman/go-flock"
 )
 
-//CheckPath 检查文件夹是否存在，不存在则创建
+// CheckPath 检查文件夹是否存在，不存在则创建
 func CheckPath(logPath string) error {
+	// 获取 logPath 的父目录路径
 	dir := filepath.Dir(logPath)
+
+	// 检查父目录是否存在
 	_, err := os.Stat(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
+			// 父目录不存在，创建该父目录及其所有父级目录
 			err := os.MkdirAll(dir, os.ModePerm)
 			if err != nil {
 				return err
@@ -28,7 +32,7 @@ func CheckPath(logPath string) error {
 	return nil
 }
 
-// GetFileSuffix 去除文件扩展名
+// GetFileSuffix 获取文件名中的扩展名
 func GetFileSuffix(s string) string {
 	fileSuffix := path.Ext(s)
 	filenameOnly := strings.TrimSuffix(s, fileSuffix)
@@ -48,7 +52,7 @@ func LockOrDie(dir string) (*flock.Flock, error) {
 	return f, nil
 }
 
-// MakeDirectory 创建 directory if is not exists
+// MakeDirectory 创建目录，如果不存在的话
 func MakeDirectory(dir string) error {
 	if _, err := os.Stat(dir); err != nil {
 		if os.IsNotExist(err) {
@@ -59,7 +63,7 @@ func MakeDirectory(dir string) error {
 	return nil
 }
 
-//PathExists 判断文件夹是否存在
+// PathExists 判断文件或目录是否存在
 func PathExists(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if err == nil {
@@ -71,17 +75,15 @@ func PathExists(path string) (bool, error) {
 	return false, err
 }
 
-//GetAllFile 获取pathname路径下所有扩展名为suffix的文件名数组
+// GetAllFile 获取指定路径下特定扩展名的文件名列表
 func GetAllFile(pathname string, suffix string) (fileSlice []string) {
 	rd, err := ioutil.ReadDir(pathname)
 	if err != nil {
 		return
 	}
-
 	for _, fi := range rd {
 		if fi.IsDir() {
 			continue
-			//GetAllFile(path.Join(pathname, fi.Name()))
 		} else {
 			if suffix != "" {
 				if strings.HasSuffix(fi.Name(), suffix) {
@@ -89,47 +91,43 @@ func GetAllFile(pathname string, suffix string) (fileSlice []string) {
 				}
 			} else {
 				fileSlice = append(fileSlice, fi.Name())
-
 			}
 		}
 	}
 	return
 }
 
-/** CopyDir
- * 拷贝文件夹,同时拷贝文件夹中的文件
- * @param srcPath  		需要拷贝的文件夹路径: D:/test
- * @param destPath		拷贝到的位置: D:/backup/
- */
+// CopyDir 复制文件夹及其中的文件
 func CopyDir(srcPath string, destPath string) error {
-	//检测目录正确性
+	// 检测源目录正确性
 	if srcInfo, err := os.Stat(srcPath); err != nil {
 		return err
 	} else {
 		if !srcInfo.IsDir() {
-			e := errors.New("srcPath不是一个正确的目录！")
+			e := errors.New("srcPath 不是一个正确的目录！")
 			return e
 		}
 	}
+	// 检查目标目录是否存在，不存在则创建
 	if destInfo, err := os.Stat(destPath); err != nil {
 		if err := MakeDirectory(destPath); err != nil {
 			return err
 		}
 	} else {
 		if !destInfo.IsDir() {
-			e := errors.New("destInfo不是一个正确的目录！")
+			e := errors.New("destInfo 不是一个正确的目录！")
 			return e
 		}
 	}
-	//加上拷贝时间:不用可以去掉
-	//destPath = destPath + "_" + time.Now().Format("20060102150405")
-
+	// 遍历源目录，并逐个拷贝文件
 	err := filepath.Walk(srcPath, func(path string, f os.FileInfo, err error) error {
 		if f == nil {
 			return err
 		}
 		if !f.IsDir() {
+			// 将路径中的反斜杠替换为斜杠
 			path := strings.Replace(path, "\\", "/", -1)
+			// 根据源路径和目标路径生成新的目标文件路径
 			destNewPath := strings.Replace(path, srcPath, destPath, -1)
 			CopyFile(path, destNewPath)
 		}
@@ -138,24 +136,24 @@ func CopyDir(srcPath string, destPath string) error {
 	return err
 }
 
-//生成目录并拷贝文件
+// CopyFile 复制文件
 func CopyFile(src, dest string) (w int64, err error) {
 	srcFile, err := os.Open(src)
 	if err != nil {
 		return
 	}
 	defer srcFile.Close()
-	//分割path目录
+	// 分割目标路径中的目录
 	destSplitPathDirs := strings.Split(dest, "/")
 
-	//检测时候存在目录
+	// 检查每级目录是否存在，不存在则创建
 	destSplitPath := ""
 	for index, dir := range destSplitPathDirs {
 		if index < len(destSplitPathDirs)-1 {
 			destSplitPath = destSplitPath + dir + "/"
 			b, _ := PathExists(destSplitPath)
 			if !b {
-				//创建目录
+				// 创建目录
 				err := os.Mkdir(destSplitPath, os.ModePerm)
 				if err != nil {
 					return w, err
@@ -171,79 +169,76 @@ func CopyFile(src, dest string) (w int64, err error) {
 	return io.Copy(dstFile, srcFile)
 }
 
-//解析text文件内容
+// ReadFile 读取文本文件的内容
 func ReadFile(path string) (str string, err error) {
-	//打开文件的路径
+	// 打开文件路径
 	fi, err := os.Open(path)
 	if err != nil {
-		err = errors.New(path + "不是一个正确的目录！")
+		err = errors.New(path + " 不是一个正确的路径！")
 		return
 	}
 	defer fi.Close()
-	//读取文件的内容
+	// 读取文件内容
 	fd, err := ioutil.ReadAll(fi)
 	if err != nil {
-		err = errors.New(path + "读取文件失败！")
+		err = errors.New(path + " 读取文件失败！")
 		return
 	}
 	str = string(fd)
 	return str, err
 }
 
-//WriteFile 写入text文件内容
-//coverType true 覆盖写入，false 追加写入
+// WriteFile 写入文本文件的内容
+// coverType 为 true 时覆盖写入，为 false 时追加写入
 func WriteFile(path, info string, coverType bool) (err error) {
-
 	var fl *os.File
 	flag := os.O_APPEND | os.O_WRONLY
 	if coverType {
 		flag = os.O_APPEND | os.O_TRUNC | os.O_WRONLY
 	}
-	if CheckFileIsExist(path) { //如果文件存在
-		fl, err = os.OpenFile(path, flag, 0666) //打开文件
+	if CheckFileIsExist(path) { // 如果文件存在
+		fl, err = os.OpenFile(path, flag, 0666) // 打开文件
 	} else {
-		fl, err = os.Create(path) //创建文件
+		fl, err = os.Create(path) // 创建文件
 	}
 	if err != nil {
-		err = errors.New(path + "打开文件失败！")
+		err = errors.New(path + " 打开文件失败！")
 		return
 	}
 	defer fl.Close()
 	n, err := fl.WriteString(info + "\n")
 	if err == nil && n < len(info) {
-		err = errors.New(path + "写入失败！")
+		err = errors.New(path + " 写入失败！")
 	}
 	return
 }
 
-//WriteFile 写入Byte文件内容
-//coverType true 覆盖写入，false 追加写入
+// WriteFileByte 写入字节数据到文件
+// coverType 为 true 时覆盖写入，为 false 时追加写入
 func WriteFileByte(path string, info []byte, coverType bool) (err error) {
 	var fl *os.File
 	flag := os.O_APPEND | os.O_WRONLY
 	if coverType {
 		flag = os.O_APPEND | os.O_TRUNC | os.O_WRONLY
 	}
-	if CheckFileIsExist(path) { //如果文件存在
-		fl, err = os.OpenFile(path, flag, os.ModePerm) //打开文件
+	if CheckFileIsExist(path) { // 如果文件存在
+		fl, err = os.OpenFile(path, flag, os.ModePerm) // 打开文件
 	} else {
-		fl, err = os.Create(path) //创建文件
+		fl, err = os.Create(path) // 创建文件
 	}
 	defer fl.Close()
 	if err != nil {
-		// err = errors.New(path + "打开文件失败！")
+		// err = errors.New(path + " 打开文件失败！")
 		return
 	}
 	n, err := fl.Write(info)
 	if err == nil && n < len(info) {
-		err = errors.New(path + "写入失败！")
+		err = errors.New(path + " 写入失败！")
 	}
 	return
 }
 
-/**
- * 判断文件是否存在  存在返回 true 不存在返回false
- */
+// CheckFileIsExist 判断文件是否存在，存在返回 true，不存在返回 false
 func CheckFileIsExist(filename string) bool {
 	var exist = true
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
@@ -252,14 +247,11 @@ func CheckFileIsExist(filename string) bool {
 	return exist
 }
 
+// GetDirList 获取指定目录下的目录结构树
 func GetDirList(dirpath, pathStr string) []DirBody {
 	var allFile []DirBody
 	finfo, _ := ioutil.ReadDir(dirpath)
-	//info, _ := os.Stat(dirpath)
-	//allFile.Label = info.Name()
-	//chiledrens := make([]DirBody, 0)
 	for _, x := range finfo {
-		//var dirInfo DirBody
 		var chiledren DirBody
 		if x.IsDir() {
 			realPath := filepath.Join(dirpath, x.Name())
@@ -274,6 +266,7 @@ func GetDirList(dirpath, pathStr string) []DirBody {
 	return allFile
 }
 
+// DirBody 用于表示目录结构的结构体
 type DirBody struct {
 	Label    string    `json:"label"`
 	Children []DirBody `json:"children"`
@@ -281,16 +274,13 @@ type DirBody struct {
 	Dir      string    `json:"dir"`
 }
 
-//递归查找空目录
+// FindEmptyFolder 递归查找空目录
 func FindEmptyFolder(dirname string) (emptys []string, err error) {
-	// Golang学习 - io/ioutil 包
-	// https://www.cnblogs.com/golove/p/3278444.html
-
 	files, err := ioutil.ReadDir(dirname)
 	if err != nil {
 		return nil, err
 	}
-	// 判断底下是否有文件
+	// 判断目录是否为空
 	if len(files) == 0 {
 		return []string{dirname}, nil
 	}
@@ -309,6 +299,7 @@ func FindEmptyFolder(dirname string) (emptys []string, err error) {
 	return emptys, nil
 }
 
+// EmptyFloder 删除空目录
 func EmptyFloder(dir string) error {
 	emptys, err := FindEmptyFolder(dir)
 	if err != nil {
@@ -323,6 +314,8 @@ func EmptyFloder(dir string) error {
 	}
 	return nil
 }
+
+// substr 截取字符串的一部分
 func substr(s string, pos, length int) (string, string) {
 	runes := []rune(s)
 	l := pos + length
@@ -332,6 +325,7 @@ func substr(s string, pos, length int) (string, string) {
 	return string(runes[pos : l+1]), string(runes[l+1:])
 }
 
+// GetParentDirectory 获取目录的父目录及余下路径
 func GetParentDirectory(dirctory, prefix string) (string, string, bool) {
 	index := strings.Index(dirctory, prefix)
 	if index > -1 {
