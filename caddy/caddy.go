@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/caddyserver/caddy"
 	"github.com/qiaogw/pkg/tools"
 	"io"
 	"io/ioutil"
@@ -16,9 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/caddyserver/caddy"
-	_ "github.com/caddyserver/caddy/caddyhttp"
-	"github.com/caddyserver/caddy/caddytls"
+	_ "github.com/caddyserver/caddy/v2/modules/caddyhttp"
 	"github.com/caddyserver/certmagic"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
@@ -234,14 +233,14 @@ func (c *Config) Init(appName string) (err error) {
 	}
 
 	// Check for one-time actions
-	if len(c.Revoke) > 0 {
-		err := caddytls.Revoke(c.Revoke)
-		if err != nil {
-			mustLogFatalf(err.Error())
-		}
-		fmt.Printf("Revoked certificate for %s\n", c.Revoke)
-		os.Exit(0)
-	}
+	//if len(c.Revoke) > 0 {
+	//	err := caddytls.Revoke(c.Revoke)
+	//	if err != nil {
+	//		mustLogFatalf(err.Error())
+	//	}
+	//	fmt.Printf("Revoked certificate for %s\n", c.Revoke)
+	//	os.Exit(0)
+	//}
 	if c.Version {
 		fmt.Printf("%s %s\n", c.appName, c.appVersion)
 		os.Exit(0)
