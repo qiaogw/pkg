@@ -192,12 +192,14 @@ func ReadFile(path string) (str string, err error) {
 // coverType 为 true 时覆盖写入，为 false 时追加写入
 func WriteFile(path, info string, coverType bool) (err error) {
 	var fl *os.File
-	flag := os.O_WRONLY | os.O_CREATE | os.O_APPEND
+	flag := os.O_WRONLY
 	if coverType {
-		flag = os.O_WRONLY | os.O_CREATE
+		flag = os.O_TRUNC | os.O_WRONLY
+	} else {
+		flag = os.O_APPEND | os.O_WRONLY
 	}
 	if CheckFileIsExist(path) { // 如果文件存在
-		fl, err = os.OpenFile(path, flag, 0666) // 打开文件
+		fl, err = os.OpenFile(path, flag, os.ModePerm) // 打开文件
 	} else {
 		fl, err = os.Create(path) // 创建文件
 	}
@@ -217,9 +219,11 @@ func WriteFile(path, info string, coverType bool) (err error) {
 // coverType 为 true 时覆盖写入，为 false 时追加写入
 func WriteFileByte(path string, info []byte, coverType bool) (err error) {
 	var fl *os.File
-	flag := os.O_APPEND | os.O_WRONLY
+	flag := os.O_WRONLY
 	if coverType {
-		flag = os.O_APPEND | os.O_TRUNC | os.O_WRONLY
+		flag = os.O_TRUNC | os.O_WRONLY
+	} else {
+		flag = os.O_APPEND | os.O_WRONLY
 	}
 	if CheckFileIsExist(path) { // 如果文件存在
 		fl, err = os.OpenFile(path, flag, os.ModePerm) // 打开文件
