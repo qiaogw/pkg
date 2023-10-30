@@ -192,9 +192,9 @@ func ReadFile(path string) (str string, err error) {
 // coverType 为 true 时覆盖写入，为 false 时追加写入
 func WriteFile(path, info string, coverType bool) (err error) {
 	var fl *os.File
-	flag := os.O_APPEND | os.O_WRONLY
+	flag := os.O_WRONLY | os.O_CREATE | os.O_APPEND
 	if coverType {
-		flag = os.O_APPEND | os.O_TRUNC | os.O_WRONLY
+		flag = os.O_WRONLY | os.O_CREATE
 	}
 	if CheckFileIsExist(path) { // 如果文件存在
 		fl, err = os.OpenFile(path, flag, 0666) // 打开文件
